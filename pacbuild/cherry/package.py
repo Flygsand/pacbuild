@@ -37,18 +37,24 @@ class PackageInstance(SQLObject):
 	pkgrel = StringCol()
 	status = EnumCol(enumValues=('new', 'queued', 'building', 'build-error', 'dep-wait', 'freshend', 'verifying', 'accepted', 'invalid'))
 	timestamp = DateTimeCol()
-	log = StringCol()
-	binary = StringCol()
+	log = StringCol(default=None)
+	binary = StringCol(default=None)
 
 	def _set_binary(self, value):
-		self._SO_set_binary(value.encode('base64').replace('\n',''))
+		if value is not None:
+			self._SO_set_binary(value.encode('base64').replace('\n',''))
+		else:
+			self._SO_set_binary(None)
 	def _get_binary(self):
 		return self._SO_get_binary().decode('base64')
 
-	source = StringCol()
+	source = StringCol(default=None)
 
 	def _set_source(self, value):
-		self._SO_set_source(value.encode('base64').replace('\n',''))
+		if value is not None:
+			self._SO_set_source(value.encode('base64').replace('\n',''))
+		else:
+			self._SO_set_source(None)
 	def _get_source(self):
 		return self._SO_get_source().decode('base64')
 

@@ -53,9 +53,5 @@ class Repo(SQLObject):
 	def getInstances(self):
 		for path in self.getPkgbuilds(True):
 			pkgbuild = pacman.load(path)
-			try:
-				pkg = package.Package.byName(pkgbuild.name)
-			except main.SQLObjectNotFound:
-				pkg = package.Package(name=pkgbuild.name)
-			yield pkg
+			yield pkgbuild
 	instances = property(getInstances)

@@ -21,6 +21,8 @@ from sqlobject import *
 import os
 import os.path
 import package
+from datetime import datetime
+import pacman
 
 class Repo(SQLObject):
 	name = StringCol(alternateID=True)
@@ -55,3 +57,31 @@ class Repo(SQLObject):
 			pkgbuild = pacman.load(path)
 			yield pkgbuild
 	instances = property(getInstances)
+
+def getInstances(repo, arch):
+	for i in repo.instances:
+		try:
+			pkg = package.Package.byName(i.name)
+		except main.SQLObjectNotFound:
+			pkg = package.Package(name=i.name, repo=repo)
+
+		pkgArch = None
+		for j in pkg.packageArchs:
+			if j.arch == arch:
+				pkgArch = j
+				break
+		if not pkgArch:
+			pkgArch = package.PackageArch(applies=True, arch=arch, package=pkg)
+
+		pkgInstance = None
+		for j in pkgArch.packageInstances:
+			if j.pkgver == i.version and j.pkgrel == i.release:
+				pkgInstance = j
+				break
+		if not pkgInstance:
+			pkgInstance = package.PackageInstance(pkgver=i.version,
+			                                      pkgrel=i.release,
+			                                      status='new',
+			                                      timestamp=datetime.now(),
+			                                      packageArch=pkgArch)
+		yield pkgInstance

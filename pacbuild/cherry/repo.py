@@ -18,6 +18,9 @@
 # 
 
 from sqlobject import *
+import os
+import os.path
+import package
 
 class Repo(SQLObject):
 	name = StringCol(alternateID=True)
@@ -25,3 +28,34 @@ class Repo(SQLObject):
 	repodir = StringCol()
 	updatescript = StringCol()
 	packages = MultipleJoin('Package')
+
+	def getCategories(self, withDir=False):
+		for category in os.listdir(self.absdir):
+			catdir = os.path.join(self.absdir, category)
+			if os.path.isdir(catdir):
+				if withDir:
+					yield catdir
+				else:
+					yield category
+	categories = property(getCategories)
+
+	def getPkgbuilds(self, withDir=False):
+		for catdir in self.getCategories(True):
+			for packageDir in os.listdir(catdir):
+				pkgbuild = os.path.join(catdir, packageDir, 'PKGBUILD')
+				if os.path.isfile(pkgbuild):
+					if withDir:
+						yield pkgbuild
+					else:
+						yield packageDir
+	pkgbuilds = property(getPkgbuilds)
+
+	def getInstances(self):
+		for path in self.getPkgbuilds(True):
+			pkgbuild = pacman.load(path)
+			try:
+				pkg = package.Package.byName(pkgbuild.name)
+			except main.SQLObjectNotFound:
+				pkg = package.Package(name=pkgbuild.name)
+			yield pkg
+	instances = property(getInstances)

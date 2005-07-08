@@ -1,0 +1,26 @@
+# $Id: PKGBUILD,v 1.14 2005/07/06 17:40:20 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=zlib
+pkgver=1.2.2
+pkgrel=2
+pkgdesc="A compression/decompression Library"
+url="http://www.gzip.org/zlib"
+depends=('glibc')
+source=(http://www.zlib.net/zlib-$pkgver.tar.gz inftrees.patch)
+md5sums=('68bd51aaa6558c3bc3fd4890e53413de' 'cf37c2317ce86b9b23f31e7d511c0155')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  patch -Np1 -i ../inftrees.patch || return 1
+  # enable Position Independent Code for prelinking
+  export CFLAGS="$CFLAGS -fPIC"
+  ./configure --shared --prefix=/usr
+  make || return 1
+  mkdir -p $startdir/pkg/usr/{lib,include,man/man3}
+  make prefix=$startdir/pkg/usr install
+  ./configure --prefix=/usr
+  make || return 1
+  mkdir -p $startdir/pkg/usr/{lib,include}
+  make prefix=$startdir/pkg/usr install
+  cp $pkgname.3 $startdir/pkg/usr/man/man3
+}

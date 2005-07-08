@@ -1,0 +1,19 @@
+# $Id: PKGBUILD,v 1.5 2005/06/21 23:31:08 judd Exp $
+# Maintainer: Judd Vinet <jvinet@zeroflux.org>
+pkgname=arch
+pkgver=1.3.3
+pkgrel=1
+pkgdesc="a modern and remarkable revision control system"
+url="http://regexps.srparish.net/www/#Gnu-arch"
+depends=('zlib' 'expat')
+source=(ftp://ftp.gnu.org/gnu/gnu-arch/tla-$pkgver.tar.gz)
+md5sums=('61d5dea41e071f78a8319401ee07ab0b')
+
+build() {
+  cd $startdir/src/tla-$pkgver/src
+  mkdir =build
+  cd =build
+  ../configure --prefix /usr
+  make || return 1
+  make prefix=$startdir/pkg/usr install
+}

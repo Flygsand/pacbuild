@@ -1,0 +1,32 @@
+# $Id: PKGBUILD,v 1.22 2005/04/26 07:46:41 judd Exp $
+# Maintainer: Judd Vinet <jvinet@zeroflux.org>
+pkgname=iputils
+pkgver=021109
+pkgrel=4
+pkgdesc="IP Configuration Utilities (and Ping)"
+url="ftp://ftp.inr.ac.ru/ip-routing/"
+depends=('glibc')
+conflicts=('netkit-base' 'arping')
+replaces=('netkit-base')
+source=(http://www.tux.org/pub/net/ip-routing/iputils-ss${pkgver}-try.tar.bz2 \
+        iputils-ss${pkgver}-try.patch protocols services)
+md5sums=('dd10ef3d76480990a2174d2bb0daddaf' '4868d9f4866fb58fb59f152cb9a79990'\
+         'ebd069f419d70bee91717491ae0a21f6' '2914fc3240fbe395345e9c8c9b5efb32')
+
+build() {
+  cd $startdir/src/iputils
+  patch -Np1 -i ../iputils-ss${pkgver}-try.patch
+  make KERNEL_INCLUDE=/usr/include || return 1
+  for i in arping clockdiff rarpd rdisc tftpd tracepath tracepath6 traceroute6; do
+    install -D -m755 $i $startdir/pkg/usr/sbin/$i
+  done
+  for i in ping ping6; do
+    install -D -m4755 $i $startdir/pkg/bin/$i
+  done
+  install -D -m644 ../services $startdir/pkg/etc/services
+  install -D -m644 ../protocols $startdir/pkg/etc/protocols
+  cd doc
+  for i in arping clockdiff ping rarpd rdisc tftpd tracepath traceroute6; do
+    install -D -m644 $i.8 $startdir/pkg/usr/man/man8/$i.8
+  done
+}

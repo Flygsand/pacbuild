@@ -1,0 +1,63 @@
+# $Id: PKGBUILD,v 1.52 2005/06/26 21:21:15 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=filesystem
+pkgver=0.7
+pkgrel=5
+pkgdesc="Base filesystem"
+url="http://www.archlinux.org"
+install=filesystem.install
+depends=('bash')
+backup=(etc/fstab etc/group etc/hosts etc/ld.so.conf etc/passwd \
+        etc/shadow etc/gshadow etc/resolv.conf etc/motd etc/nsswitch.conf \
+        etc/shells etc/host.conf etc/skel/.bashrc etc/skel/.bash_profile \
+        etc/skel/.xinitrc root/.bashrc root/.bash_profile)
+source=(group issue nsswitch.conf securetty host.conf ld.so.conf \
+        passwd shadow fstab hosts motd resolv.conf shells arch-release \
+        xinitrc xsession bashrc)
+md5sums=('c8b6625d7cd9829b37163c0e1cde92ac' 'c499f05c9e384c2c81081abba094dd77'\
+         '775464ba7588b4976e0c2a02b83123f4' '655071da46d2ac03e0fb8a071bf193ea'\
+         'f28150d4c0b22a017be51b9f7f9977ed' 'f9e1d9fbf084dcc29a82a74b9ed4be65'\
+         '4eee5140437e09821e82d689f53439b3' 'c163cae617cbae36d1eb5546bdb59bcb'\
+         '11fa66f672ccd99af6b120b90da047ef' '81b3cb42a6ddabc2ed2310511ee9c859'\
+         'd41d8cd98f00b204e9800998ecf8427e' '6f48288b6fcaf0065fcb7b0e525413e0'\
+         '22518e922891f9359f971f4f5b4e793c' 'e3cc5b8cd056c52f5103a0d5bed262be'\
+         'c984f45a636386408ecc505a343907ab' '7873d97db30d6c279ed37e3559e7c59d'\
+         'e31fd6d8762ca508da0256a784cd6d31')
+
+build() {
+  cd $startdir/pkg
+  mkdir -p bin boot dev etc home lib mnt proc root sbin tmp usr var opt sys
+  mkdir -p mnt/{fl,cd,dvd}
+  mkdir -p usr/{bin,include,lib,sbin,share/misc,src,man}
+  mkdir -p usr/man/man{1,2,3,4,5,6,7,8}
+  # fhs compliancy
+  mkdir -p usr/local/{bin,games,include,lib,man,sbin,share,src}
+  mkdir -p var/{cache/man,lib/pacman,abs,local,lock,opt,run,spool/mail,tmp}
+  mkdir -p var/log/old
+  mkdir -p etc/profile.d
+  mkdir -p home/ftp lib/modules
+  (cd $startdir/pkg/usr; ln -s ../var var)
+  (cd $startdir/pkg/var; ln -s spool/mail mail)
+
+  # vsftpd won't run with write perms on /home/ftp
+  chown ftp.ftp home/ftp
+  chmod 555 home/ftp
+  chmod 1777 var/spool/mail tmp var/tmp
+  chmod 0750 root
+
+  cd $startdir/src
+  cp fstab group host.conf hosts issue ld.so.conf motd nsswitch.conf \
+    passwd resolv.conf securetty shadow shells arch-release $startdir/pkg/etc/
+  touch $startdir/pkg/etc/gshadow
+  chmod 600 $startdir/pkg/etc/shadow $startdir/pkg/etc/gshadow
+
+  install -D -m644 bashrc $startdir/pkg/etc/skel/.bashrc
+  echo ". \$HOME/.bashrc" >$startdir/pkg/etc/skel/.bash_profile
+
+  mkdir -p $startdir/pkg/etc/skel
+  cp $startdir/pkg/etc/skel/{.bashrc,.bash_profile} $startdir/pkg/root/
+  install -D -m755 xinitrc $startdir/pkg/etc/skel/.xinitrc
+  install -D -m755 xsession $startdir/pkg/etc/skel/.xsession
+
+  cat issue | sed "s/#VERSION#/$pkgver/" >$startdir/pkg/etc/issue
+}

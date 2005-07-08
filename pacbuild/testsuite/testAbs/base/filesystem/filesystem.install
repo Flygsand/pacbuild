@@ -1,0 +1,28 @@
+# arg 1:  the new package version
+post_install() {
+  [ -f var/log/btmp ]    || : >var/log/btmp
+  [ -f var/log/lastlog ] || : >var/log/lastlog
+  [ -f var/log/wtmp ]    || : >var/log/wtmp
+  [ -f var/run/utmp ]    || : >var/run/utmp
+}
+
+# arg 1:  the new package version
+# arg 2:  the old package version
+post_upgrade() {
+  post_install $1
+  if [ ! "`grep optical etc/group`" ]; then
+    echo "adding new groups: audio optical"
+    usr/sbin/groupadd -g 92 audio   >/dev/null 2>&1
+    usr/sbin/groupadd -g 93 optical >/dev/null 2>&1
+  fi
+  if [ ! "`grep video etc/group`" ]; then
+    echo "adding new groups: video floppy storage"
+    usr/sbin/groupadd -g 91 video   >/dev/null 2>&1
+    usr/sbin/groupadd -g 94 floppy  >/dev/null 2>&1
+    usr/sbin/groupadd -g 95 storage >/dev/null 2>&1
+  fi
+}
+
+op=$1
+shift
+$op $*

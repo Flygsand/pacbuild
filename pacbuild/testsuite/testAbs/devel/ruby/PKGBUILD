@@ -1,0 +1,20 @@
+# $Id: PKGBUILD,v 1.20 2005/02/22 22:09:43 dorphell Exp $
+# Maintainer: dorphell <dorphell@archlinux.org>
+# Contributor: John Proctor <jproctor@prium.net>
+pkgname=ruby
+pkgver=1.8.2
+pkgrel=4
+pkgdesc="An object-oriented language for quick and easy programming"
+url="http://www.ruby-lang.org/en/"
+depends=('gdbm' 'db' 'openssl' 'zlib' 'readline')
+source=(ftp://ftp.ruby-lang.org/pub/ruby/${pkgname}-${pkgver}.tar.gz)
+md5sums=('8ffc79d96f336b80f2690a17601dea9b')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr --enable-shared --enable-pthread
+  make || return 1
+  make DESTDIR=${startdir}/pkg install
+  #generate the ri docs
+  LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH DESTDIR=$startdir/pkg ./ruby -I./lib -I./ext/syck ./bin/rdoc --all --ri-system ./
+}

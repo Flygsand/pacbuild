@@ -1,0 +1,31 @@
+# $Id: PKGBUILD,v 1.19 2005/06/22 02:37:09 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=vim
+pkgver=6.3
+pkgrel=5
+pkgdesc="VIM - Vi IMproved console"
+url="http://www.vim.org"
+depends=('glibc' 'ncurses')
+backup=(etc/vimrc)
+source=(ftp://ftp.vim.org/pub/vim/unix/$pkgname-$pkgver.tar.bz2 \
+        vim.patch filetype.patch)
+md5sums=('821fda8f14d674346b87e3ef9cb96389' '386938c7bd7890b7d1900615f40ee9a7'\
+         '916fd94f2546007c637ad08e88400d1a')
+
+build() {
+  cd $startdir/src/vim63
+  patch -Np1 -i ../vim.patch || return 1
+  patch -Np1 -i ../filetype.patch || return 1
+  cd src
+  ./configure --prefix=/usr --localstatedir=/var/lib/$pkgname \
+    --disable-gpm --with-x=no --enable-gui=no --enable-multibyte \
+    --enable-cscope
+#    --enable-perlinterp --enable-pythoninterp --enable-rubyinterp   
+  make CPPFLAGS=-DSYS_VIMRC_FILE=\"/etc/vimrc\" VIMRTDIR=  auto/pathdef.c
+  make CPPFLAGS=-DSYS_VIMRC_FILE=\\\"/etc/vimrc\\\" VIMRTDIR=  || return 1
+  make DESTDIR=$startdir/pkg VIMRTDIR= install
+  cd $startdir/pkg/usr/bin
+  ln -sf vim vi
+  mkdir -p $startdir/pkg/etc
+  cp $startdir/pkg/usr/share/vim/vimrc_example.vim $startdir/pkg/etc/vimrc
+}

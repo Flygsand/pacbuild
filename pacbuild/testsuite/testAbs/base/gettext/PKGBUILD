@@ -1,0 +1,23 @@
+# $Id: PKGBUILD,v 1.26 2005/06/01 01:08:36 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=gettext
+pkgver=0.14.5
+pkgrel=1
+pkgdesc="GNU internationalization library"
+url="http://www.gnu.org/software/gettext"
+depends=('gcc')
+source=(ftp://ftp.gnu.org/pub/gnu/$pkgname/$pkgname-$pkgver.tar.gz)
+md5sums=('e2f6581626a22a0de66dce1d81d00de3')
+
+# NOTE: To properly build this, you'll need to (1) build it, (2) upgrade it
+#       with pacman, then (3) build it again.
+#
+#       This is because some executables (/usr/bin/msgcat) link to the OLD
+#       version of libgettextlib.so.  Building twice fixes this.
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr --enable-csharp
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+}

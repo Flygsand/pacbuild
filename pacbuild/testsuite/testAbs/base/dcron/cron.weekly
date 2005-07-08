@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# /etc/cron/cron.weekly
+#
+
+. /etc/cron/rotatelog
+
+rotatelog messages
+rotatelog auth
+rotatelog mail
+rotatelog kernel
+rotatelog errors
+rotatelog crond
+
+# End of file

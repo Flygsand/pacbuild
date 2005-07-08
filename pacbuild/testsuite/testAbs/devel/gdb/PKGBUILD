@@ -1,0 +1,25 @@
+# $Id: PKGBUILD,v 1.14 2004/12/28 20:24:16 dorphell Exp $
+# Maintainer: dorphell <dorphell@archlinux.org>
+pkgname=gdb
+pkgver=6.3
+pkgrel=1
+pkgdesc="The GNU Debugger"
+depends=('glibc' 'ncurses')
+source=(http://ftp.gnu.org/gnu/gdb/$pkgname-$pkgver.tar.gz)
+url="http://sources.redhat.com/gdb/"
+md5sums=('812de9e756d53c749ea5516d9ffa5905')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+	./configure --prefix=/usr --disable-nls
+	make || return 1
+	make prefix=$startdir/pkg/usr install
+	# resolve conflicts with binutils
+	#  (binutils has newer versions of the .[ha] files)
+	rm -f $startdir/pkg/usr/include/{bfd.h,symcat.h,ansidecl.h,bfdlink.h}
+	rm -f $startdir/pkg/usr/lib/{libopcodes.a,libopcodes.la}
+	rm -f $startdir/pkg/usr/lib/{libiberty.a,libbfd.a,libbfd.la}
+
+	# this is provided in binutils
+	rm -f $startdir/pkg/usr/include/dis-asm.h
+}

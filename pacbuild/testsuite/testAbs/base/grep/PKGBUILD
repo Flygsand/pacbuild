@@ -1,0 +1,21 @@
+# $Id: PKGBUILD,v 1.14 2004/12/30 01:42:16 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=grep
+pkgver=2.5.1a
+pkgrel=1
+pkgdesc="A string search utility"
+url="http://www.gnu.org/software/grep/grep.html"
+depends=('glibc' 'bash')
+source=(ftp://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz)
+md5sums=('71db1cb262c27f02461c4bca514591ce')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  # perl-regexp requires pcre -- we don't include pcre in base
+  ./configure --prefix=/usr --disable-perl-regexp
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+  mkdir $startdir/pkg/bin
+  mv $startdir/pkg/usr/bin/*grep $startdir/pkg/bin/
+  rmdir $startdir/pkg/usr/bin
+}

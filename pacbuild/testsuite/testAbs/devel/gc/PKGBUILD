@@ -1,0 +1,18 @@
+# $Id: PKGBUILD,v 1.4 2005/01/02 01:25:37 dorphell Exp $
+# Maintainer: dorphell <dorphell@archlinux.org>
+# Contributor: dorphell <dorphell@gmx.net>
+pkgname=gc
+pkgver=6.4
+pkgrel=1
+pkgdesc="A garbage collector for C and C++"
+url="http://www.hpl.hp.com/personal/Hans_Boehm/gc/"
+source=(http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/$pkgname$pkgver.tar.gz)
+depends=('glibc')
+md5sums=('ef03495e980b834a99c0e27eedaa546e')
+
+build() {
+  cd $startdir/src/$pkgname$pkgver
+  ./configure --prefix=/usr
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+}

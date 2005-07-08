@@ -1,0 +1,18 @@
+# $Id: PKGBUILD,v 1.3 2005/03/24 08:39:05 judd Exp $
+# Maintainer: Judd Vinet <jvinet@zeroflux.org>
+pkgname=mod_python
+pkgver=3.1.4
+pkgrel=1
+pkgdesc="an Apache module that embeds the Python interpreter within the server"
+url="http://www.modpython.org/"
+depends=('apache' 'python')
+install=mod_python.install
+source=(http://www.apache.org/dist/httpd/modpython/mod_python-$pkgver.tgz)
+md5sums=('607175958137b06bcda91110414c82a1')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+}

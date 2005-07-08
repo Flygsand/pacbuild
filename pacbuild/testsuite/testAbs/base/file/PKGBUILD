@@ -1,0 +1,17 @@
+# $Id: PKGBUILD,v 1.25 2005/06/28 20:01:11 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=file
+pkgver=4.14
+pkgrel=1
+pkgdesc="File type identification utility"
+url="ftp://ftp.gw.com/mirrors/pub/unix/file/"
+depends=('glibc' 'zlib')
+source=(ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz)
+md5sums=('66983e60087e8bcd588c8ab38a861af0')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr --datadir=/usr/share/misc
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+}

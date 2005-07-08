@@ -1,0 +1,22 @@
+# $Id: PKGBUILD,v 1.5 2005/03/14 19:31:32 judd Exp $
+# Maintainer: Judd Vinet <jvinet@zeroflux.org>
+# Contributor: Tom Newsom <Jeepster@gmx.co.uk>
+pkgname=unixodbc
+pkgver=2.2.11
+pkgrel=1
+pkgdesc="ODBC is an open specification for providing application developers with a predictable API with which to access Data Sources"
+url="http://www.unixodbc.org/"
+backup=('etc/odbc.ini' 'etc/odbcinst.ini')
+depends=('readline')
+makedepend=('qt')
+source=(http://www.unixodbc.org/unixODBC-$pkgver.tar.gz)
+md5sums=('9ae806396844e38244cf65ad26ba0f23')
+
+build() {
+  cd $startdir/src/unixODBC-$pkgver
+  sed -i 's/YY_FLUSH_BUFFER/yy_flush_buffer(YY_CURRENT_BUFFER)/' sqp/lex.l
+  [ -f /etc/profile.d/qt.sh ] && source /etc/profile.d/qt.sh
+  LFLAGS=-l ./configure --prefix=/usr --sysconfdir=/etc
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+}

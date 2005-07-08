@@ -1,0 +1,12 @@
+diff -Naur hotplug-2004_04_01-orig/etc/hotplug/usb.agent hotplug-2004_04_01/etc/hotplug/usb.agent
+--- hotplug-2004_04_01-orig/etc/hotplug/usb.agent	2004-04-01 09:38:59.000000000 -0800
++++ hotplug-2004_04_01/etc/hotplug/usb.agent	2004-08-03 20:07:54.000000000 -0700
+@@ -252,7 +252,7 @@
+ 	\#*) continue ;;
+ 	esac
+ 
+-	set $line
++	if [ "$line" != "" ]; then set $line; fi
+ 
+ 	module=$1
+ 	match_flags=$(($2))

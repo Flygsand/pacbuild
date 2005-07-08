@@ -1,0 +1,22 @@
+diff -Naur vim63-orig/runtime/filetype.vim vim63/runtime/filetype.vim
+--- vim63-orig/runtime/filetype.vim	2004-05-30 10:49:48.000000000 -0700
++++ vim63/runtime/filetype.vim	2005-06-21 17:53:01.000000000 -0700
+@@ -16,7 +16,7 @@
+ augroup filetypedetect
+ 
+ " Ignored extensions
+-au BufNewFile,BufRead *.orig,*.bak,*.old,*.new,*.rpmsave,*.rpmnew
++au BufNewFile,BufRead *.orig,*.bak,*.old,*.new,*.pacsave,*.pacnew
+ 	\ exe "doau filetypedetect BufRead " . expand("<afile>:r")
+ au BufNewFile,BufRead *~
+ 	\ let s:name = expand("<afile>") |
+@@ -1292,7 +1292,8 @@
+ 
+ " Shell scripts (sh, ksh, bash, bash2, csh); Allow .profile_foo etc.
+ " Gentoo ebuilds are actually bash scripts
+-au BufNewFile,BufRead .bashrc*,bashrc,bash.bashrc,.bash_profile*,.bash_logout*,*.bash,*.ebuild call SetFileTypeSH("bash")
++" Arch PKGBUILD files are bash scripts
++au BufNewFile,BufRead .bashrc*,bashrc,bash.bashrc,.bash_profile*,.bash_logout*,*.bash,*.ebuild,PKGBUILD call SetFileTypeSH("bash")
+ au BufNewFile,BufRead .kshrc*,*.ksh call SetFileTypeSH("ksh")
+ au BufNewFile,BufRead /etc/profile,.profile*,*.sh,*.env call SetFileTypeSH(getline(1))
+ 

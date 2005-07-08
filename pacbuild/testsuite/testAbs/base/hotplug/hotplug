@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# hotplug This scripts starts hotpluggable subsystems.
+#
+
+. /etc/rc.conf
+. /etc/rc.d/functions
+
+case "$1" in
+	start|restart)
+		stat_busy "Starting Hotplug Daemon"
+		for RC in /etc/hotplug/*.rc; do $RC $1; done
+		add_daemon hotplug
+		touch /var/lock/hotplug
+		stat_done
+		;;
+	stop)
+		stat_busy "Stopping Hotplug Daemon"
+		for RC in /etc/hotplug/*.rc; do $RC $1; done
+		rm_daemon hotplug
+		rm -f /var/lock/hotplug
+		stat_done
+		;;
+	*)
+		echo $"Usage: $0 {start|stop|restart}"
+		exit 1
+		;;
+esac
+exit 0

@@ -1,0 +1,28 @@
+# $Id: PKGBUILD,v 1.21 2004/05/05 22:10:11 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=dcron
+pkgver=2.9
+pkgrel=2
+pkgdesc="Dillon's Cron Daemon"
+url="http://apollo.backplane.com/FreeSrc/"
+backup=(var/spool/cron/root)
+depends=('glibc')
+source=(http://apollo.backplane.com/FreeSrc/dcron29.tgz dcron-2.9.patch \
+  root.crontab run-cron crond crond.logrotate)
+md5sums=('120fb2ca3d91496b32df0ab01dcaec5e' '8908f5b990979ff51e80172dd237987d' \
+	'7fcc06b13708ebd667711b1fbf62ee6e' '5ff0cdcb9ec99778938ac6ef26800327' \
+	'e6df721e6dc300acca251a8949923c02' 'aeabcd5e4924d1a7593c8782d1068c86')
+
+build() {
+  cd $startdir/src/dcron
+  patch -Np1 -i ../dcron-2.9.patch
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+  mkdir -p $startdir/pkg/var/spool/cron
+  mkdir -p $startdir/pkg/usr/sbin
+  mkdir -p $startdir/pkg/etc/{rc.d,cron.hourly,cron.daily,cron.weekly,cron.monthly}
+  install -D -m0600 ../root.crontab $startdir/pkg/var/spool/cron/root
+  install -D -m755 ../run-cron $startdir/pkg/usr/sbin/run-cron
+  install -D -m755 ../crond $startdir/pkg/etc/rc.d/crond
+  install -D -m644 ../crond.logrotate $startdir/pkg/etc/logrotate.d/crond
+}

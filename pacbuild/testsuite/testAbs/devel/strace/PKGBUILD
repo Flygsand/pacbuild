@@ -1,0 +1,19 @@
+# $Id: PKGBUILD,v 1.10 2005/03/24 08:50:50 judd Exp $
+# Maintainer: dorphell <dorphell@archlinux.org>
+# Contributor: Tom Newsom <Jeepster@gmx.co.uk>
+pkgname=strace
+pkgver=4.5.11
+pkgrel=1
+pkgdesc="A useful diagnositic, instructional, and debugging tool"
+url="http://www.liacs.nl/~wichert/strace/"
+depends=('glibc')
+source=(http://voxel.dl.sourceforge.net/sourceforge/strace/strace-$pkgver.tar.bz2)
+md5sums=('28335e15c83456a3db055a0a0efcb4fe')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr
+  mkdir -p $startdir/pkg/usr/bin $startdir/pkg/usr/man/man1
+  make || return 1
+  make prefix=$startdir/pkg/usr install
+}

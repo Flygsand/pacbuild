@@ -1,0 +1,62 @@
+# $Id: PKGBUILD,v 1.32 2005/03/30 19:35:25 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=glibc
+pkgver=2.3.4
+pkgrel=2
+# glibc doesn't release very often, so we use CVS snapshots to stay up-to-date
+# snapshots are available at ftp://sources.redhat.com/pub/glibc/snapshots/
+_snap=20041108
+pkgdesc="GNU C Library with NPTL and linuxthreads"
+url="http://www.gnu.org/software/libc"
+depends=()
+source=(ftp://ftp.archlinux.org/other/glibc/glibc-$pkgver-$_snap.tar.bz2 \
+  http://ep09.pld-linux.org/~mmazur/linux-libc-headers/linux-libc-headers-2.6.9.1.tar.bz2 \
+  glibc-2.3.4.patch nscd fixup.patch dlopen.patch)
+md5sums=('2330e4ba16e5376472c9a42b5616be9a' 'd3507b2c0203a0760a677022badcf455'\
+         '43ff78a3d6e21bd374367b924b1335de' 'aae0c94d27ab3d854d42706cbff69671'\
+         'e9ac70903065526222320b0a4482478a' '0863001ef3fa8492cf0741de3c9a7096')
+
+build() {
+  # Kernel Headers
+  mkdir -p $startdir/pkg/usr/include
+  cp -r linux-libc-headers-2.6.9.1/include/linux $startdir/pkg/usr/include/linux
+  cp -r linux-libc-headers-2.6.9.1/include/asm-i386 $startdir/pkg/usr/include/asm
+  find $startdir/pkg -type d -exec chmod 755 {} \;
+  find $startdir/pkg -type f -exec chmod 644 {} \;
+  echo "" > $startdir/pkg/usr/include/linux/config.h
+  chown -R root.root $startdir/pkg/usr/include
+
+  cd $startdir/src/$pkgname-$pkgver-$_snap
+  patch -Np1 -i ../glibc-2.3.4.patch || return 1
+  patch -Np1 -i ../dlopen.patch || return 1
+  #patch -Np1 -i ../fixup.patch || return 1
+  #mv ../linuxthreads_db ./
+  #mv ../linuxthreads ./ 
+
+  mkdir ../glibc-build 
+  cd ../glibc-build
+  ../$pkgname-$pkgver-$_snap/configure --prefix=/usr \
+    --enable-add-ons=linuxthreads --libexecdir=/usr/lib \
+    --with-headers=$startdir/pkg/usr/include --enable-kernel=2.4.0 \
+    --disable-profile --without-gd --with-tls --with-__thread
+  make CFLAGS+="-fno-unit-at-a-time" || return 1
+  make check 
+  make install_root=$startdir/pkg install
+  make install_root=$startdir/pkg localedata/install-locales  
+
+  mkdir ../glibc-nptl
+  cd ../glibc-nptl
+  ../$pkgname-$pkgver-$_snap/configure --prefix=/usr \
+     --enable-add-ons=nptl --libexecdir=/usr/lib \
+     --with-headers=$startdir/pkg/usr/include --enable-kernel=2.6.0 \
+     --disable-profile --without-cvs --without-gd --with-tls --with-__thread
+  make CFLAGS+="-fno-unit-at-a-time" || return 1
+  make check
+  make install_root=$startdir/pkg/nptl install
+  mv $startdir/pkg/nptl/lib $startdir/pkg/lib/tls
+  rm -rf $startdir/pkg/nptl
+
+  rm -rf $startdir/pkg/etc/ld.so.cache $startdir/pkg/etc/localtime
+  install -D -m644 $startdir/src/$pkgname-$pkgver-$_snap/nscd/nscd.conf $startdir/pkg/etc/nscd.conf
+  install -D -m755 $startdir/src/nscd $startdir/pkg/etc/rc.d/nscd
+}

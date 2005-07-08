@@ -1,0 +1,31 @@
+# $Id: PKGBUILD,v 1.12 2005/04/21 19:15:58 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=gzip
+pkgver=1.2.4b
+pkgrel=2
+pkgdesc="GNU compression utility"
+url="http://www.gzip.org"
+depends=('glibc' 'bash')
+source=(ftp://ftp.gnu.org/pub/gnu/gzip/gzip-1.2.4a.tar.gz \
+        http://www.gzip.org/$pkgname-1.2.4b.patch \
+        gzip-fixpaths.patch)
+md5sums=('39053e044b18ecd0627f80fbe7cfeaad' '74b81d7ec67a369e4e782a16d6f65afc'\
+         '0c647de9d177a0a33e4a23d910939eba')
+
+build() {
+  cd $startdir/src/$pkgname-1.2.4a
+  patch -Np1 <../gzip-1.2.4b.patch || return 1
+  patch -Np1 <../gzip-fixpaths.patch || return 1
+  ./configure --prefix=/usr
+  make || return 1
+  mkdir -p $startdir/pkg/bin $startdir/pkg/usr/bin
+  make prefix=$startdir/pkg/usr install
+  cd $startdir/pkg/usr/bin
+  mv $pkgname $startdir/pkg/bin
+  rm gunzip zcat
+  cd $startdir/pkg/bin
+  ln -sf $pkgname gunzip
+  ln -sf $pkgname zcat
+  ln -sf $pkgname compress
+  ln -sf gunzip uncompress
+}

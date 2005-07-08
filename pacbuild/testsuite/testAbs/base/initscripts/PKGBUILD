@@ -1,0 +1,30 @@
+# $Id: PKGBUILD,v 1.64 2005/06/05 20:30:12 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=initscripts
+pkgver=0.7
+pkgrel=10
+pkgdesc="System initialization/bootup scripts"
+backup=(etc/inittab etc/rc.conf etc/rc.local)
+depends=('bash' 'mawk' 'grep' 'coreutils' 'sed')
+source=(functions inittab rc.conf rc.local rc.multi rc.shutdown \
+        rc.single rc.sysinit network minilogd.c netfs)
+md5sums=('0cd9a5433bbfd093375693e1edc141d8' '462acc0a5a403777d86f467285eea5d0'\
+         '69b458f552c9249bf92ce437c5330b8a' '10d015f35686314cd37f24683dfd1f79'\
+         '9218f22fafbd65943a27977f81a04487' 'c7954110c4333ed370d56d95b09ce85b'\
+         '618374f5a3e01a4e7c1da711c1cf465b' 'e11a402dedcea72ca163ef61cce2764a'\
+         '96f9db957262861fdb4b3ac90bc4dfaf' '25056103268254a561065604bd432313'\
+         'b0ed89875d475014b56d7ef9d110bfd1')
+
+build() {
+  mkdir -p $startdir/pkg/etc/{rc.d,conf.d}
+  install -D -m644 functions $startdir/pkg/etc/rc.d/functions
+  install -D -m644 inittab $startdir/pkg/etc/inittab
+  install -D -m644 rc.conf $startdir/pkg/etc/rc.conf
+  for i in rc.local rc.multi rc.shutdown rc.single rc.sysinit; do
+    install -D -m755 $i $startdir/pkg/etc/$i
+  done
+  install -D -m755 network $startdir/pkg/etc/rc.d/network
+  install -D -m755 netfs $startdir/pkg/etc/rc.d/netfs
+  gcc -o minilogd minilogd.c || return 1
+  install -D -m755 minilogd $startdir/pkg/sbin/minilogd
+}

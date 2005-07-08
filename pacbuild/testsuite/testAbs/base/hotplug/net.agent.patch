@@ -1,0 +1,14 @@
+--- hotplug-2004_09_23/etc/hotplug/net.agent.old	2004-09-20 23:02:34.000000000 +0000
++++ hotplug-2004_09_23/etc/hotplug/net.agent	2004-11-21 13:50:06.000000000 +0000
+@@ -75,6 +75,11 @@
+ 		    debug_mesg invoke \"$script\" --quiet start
+ 		    exec "$script" --quiet start
+ 		fi
++	    # Arch Linux
++    	    elif [ -f /etc/arch-release ]; then
++		debug_mesg invoke /etc/rc.d/network hotplug_ifup $INTERFACE
++		exec /etc/rc.d/network hotplug_ifup $INTERFACE
++	    
+ 	    else
+ 		mesg "how do I bring interfaces up on this distro?"
+ 	    fi

@@ -1,0 +1,98 @@
+#!/bin/sh
+#
+# /etc/rc.shutdown
+#
+
+. /etc/rc.conf
+. /etc/rc.d/functions
+
+# avoid staircase effect
+/bin/stty onlcr
+
+echo " "
+printhl "Initiating Shutdown..."
+echo " "
+
+if [ "$PREVLEVEL" = "3" -o "$PREVLEVEL" = "5" ]; then
+	# Shutdown daemons
+	let i=${#DAEMONS[@]}
+	while [[ i -ge 0 ]]; do
+		if [[ `echo ${DAEMONS[$i]} | grep '^[^\!]' | wc -l` -eq 1 ]]; then
+			/etc/rc.d/${DAEMONS[$i]#@} stop
+		fi
+		let i=i-1
+	done
+	# find any leftover daemons and shut them down
+	if [ -d /var/run/daemons ]; then
+		for daemon in `ls /var/run/daemons`; do
+			/etc/rc.d/$daemon stop
+		done
+	fi
+fi
+
+# Terminate all processes
+stat_busy "Sending SIGTERM To Processes"
+/sbin/killall5 -15 &> /dev/null
+/bin/sleep 5
+stat_done
+
+stat_busy "Sending SIGKILL To Processes"
+/sbin/killall5 -9 &> /dev/null
+/bin/sleep 1
+stat_done
+
+stat_busy "Saving Random Seed"
+/bin/dd if=/dev/urandom of=/var/run/random-seed count=1 bs=512 2> /dev/null
+stat_done
+
+stat_busy "Saving System Clock"
+if [ "$HARDWARECLOCK" = "UTC" ]; then
+	/sbin/hwclock --utc --systohc
+else
+	/sbin/hwclock --localtime --systohc
+fi
+stat_done
+
+# Write to wtmp file before unmounting
+/sbin/halt -w
+
+stat_busy "Deactivating Swap"
+/sbin/swapoff -a
+stat_done
+
+stat_busy "Unmounting Filesystems"
+/bin/umount -a
+stat_done
+
+if [ "$USELVM" = "yes" -o "$USELVM" = "YES" ]; then
+	if [ -f /etc/lvmtab -a -x /sbin/vgchange ]; then
+		stat_busy "Deactivating LVM1 groups"
+		/sbin/vgchange -a n
+		stat_done
+	elif [ -d /etc/lvm -a -x /sbin/lvm ]; then
+		/bin/mount -n -t sysfs none /sys 2>/dev/null
+		if [ -d /sys/block ]; then
+			stat_busy "Deactivating LVM2 groups"
+			/sbin/lvm vgchange --ignorelockingfailure -a n
+			stat_done
+			umount /sys
+		fi
+	fi
+fi
+
+stat_busy "Remounting Root Filesystem Read-only"
+/bin/mount -n -o remount,ro /
+stat_done
+
+# Power off or reboot
+if [ "$RUNLEVEL" = "0" ]; then
+	printsep
+	printhl "${C_H2}POWER OFF"
+	/sbin/poweroff -d -f -h -i
+else
+	printsep
+	printhl "${C_H2}REBOOTING"
+	/sbin/reboot -d -f -i
+fi
+
+# End of file

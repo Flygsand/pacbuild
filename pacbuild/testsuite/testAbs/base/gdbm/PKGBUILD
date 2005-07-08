@@ -1,0 +1,20 @@
+# $Id: PKGBUILD,v 1.14 2004/03/28 18:58:25 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=gdbm
+pkgver=1.8.3
+pkgrel=2
+pkgdesc="GNU database library"
+depends=('glibc')
+url="http://www.gnu.org/software/gdbm/gdbm.html"
+source=(ftp://ftp.gnu.org/gnu/gdbm/$pkgname-$pkgver.tar.gz)
+md5sums=('1d1b1d5c0245b1c00aff92da751e9aa1')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr
+  make prefix=/usr || return 1
+  make prefix=$startdir/pkg/usr install
+  make prefix=$startdir/pkg/usr install-compat
+  chown root.root $startdir/pkg/usr/include/{dbm.h,gdbm.h,ndbm.h}
+  chown root.root $startdir/pkg/usr/man/man3/gdbm.3
+}

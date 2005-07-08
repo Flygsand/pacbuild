@@ -1,0 +1,23 @@
+# $Id: PKGBUILD,v 1.10 2005/03/11 19:45:50 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=hotplug
+pkgver=2004_09_23
+pkgrel=4
+pkgdesc="Lets you plug in new USB and PCI devices and use them immediately"
+url="http://linux-hotplug.sourceforge.net/"
+depends=('usbutils')
+backup=(etc/hotplug/{usb.usermap,usb.handmap,usb.distmap,blacklist})
+source=(ftp://ftp.kernel.org/pub/linux/utils/kernel/hotplug/hotplug-$pkgver.tar.gz \
+        hotplug hotplug.patch net.agent.patch) 
+md5sums=('1542af9cbe1053cfde9421007f702cf2' '9d7a2e54c46f000a4d86e166168da7ff'\
+         '77ca38a96ca2d51ed6ec3b0225e1f019' 'd4874a51e0eb0f505f72a778c89cf097')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  patch -Np1 -i ../hotplug.patch || return 1
+  patch -Np1 -i ../net.agent.patch || return 1
+  make INSTALL="/bin/install -c" prefix=$startdir/pkg install
+  install -D -m644 etc/hotplug/pnp.distmap $startdir/pkg/etc/hotplug/pnp.distmap
+  install -D -m755 ../hotplug $startdir/pkg/etc/rc.d/hotplug
+  rm -rf $startdir/pkg/etc/init.d
+}

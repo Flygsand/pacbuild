@@ -1,0 +1,18 @@
+# $Id: PKGBUILD,v 1.13 2004/12/30 02:53:16 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=tar
+pkgver=1.15.1
+pkgrel=1
+pkgdesc="Utility used to store, backup, and transport files"
+url="http://www.gnu.org/software/tar/tar.html"
+depends=('glibc' 'bash')
+source=(ftp://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz tar.1)
+md5sums=('d87021366fe6488e9dc398fcdcb6ed7d' 'a5f8c5da7a9465ea1978145f3ef0610c')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure --prefix=/usr --libexecdir=/usr/lib/tar --bindir=/bin
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+	install -D -m644 ../tar.1 $startdir/pkg/usr/man/man1/tar.1
+}

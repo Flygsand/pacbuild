@@ -1,0 +1,82 @@
+diff -Naur dcron-orig/Makefile dcron/Makefile
+--- dcron-orig/Makefile	2002-12-17 12:08:49.000000000 -0800
++++ dcron/Makefile	2003-11-18 17:21:22.000000000 -0800
+@@ -1,6 +1,7 @@
+ # Makefile for dillon's cron and crontab
+ #
+ 
++DESTDIR =
+ CC  = gcc
+ CFLAGS = -O2 -Wall -Wstrict-prototypes
+ LIB = 
+@@ -14,12 +15,10 @@
+ all:	${PROTOS} crond crontab
+ 
+ crond:	${OBJS}
+-	${CC} ${CFLAGS} -o crond ${OBJS} ${LIB}
+-	strip crond
++	${CC} ${CFLAGS} -o crond ${OBJS} ${LIB} ${LDFLAGS}
+ 
+ crontab:  ${D_OBJS}
+-	${CC} ${CFLAGS} -o crontab ${D_OBJS}
+-	strip crontab
++	${CC} ${CFLAGS} -o crontab ${D_OBJS} ${LDFLAGS}
+ 
+ protos.h: ${SRCS} ${D_SRCS}
+ 	fgrep -h Prototype ${SRCS} ${D_SRCS} >protos.h
+@@ -31,18 +30,10 @@
+ 	rm -f *.o dcron.tgz $(PROTOS)
+ 
+ install:
+-	rm -f /usr/bin/crond /usr/bin/crontab
+-	cp crond crontab /usr/bin
+-	chown root.wheel /usr/bin/crond
+-	chown root.cron /usr/bin/crontab
+-	chmod 700 /usr/bin/crond
+-	chmod 4750 /usr/bin/crontab
+-	-mkdirs /usr/man/man1
+-	-mkdirs /usr/man/man8
+-	cp crontab.1 /usr/man/man1
+-	cp crond.8 /usr/man/man8
+-	chmod 444 /usr/man/man1/crontab.1
+-	chmod 444 /usr/man/man8/crond.8
++	install -o root -g root -m 0755 -D crond $(DESTDIR)/usr/sbin/crond
++	install -o root -g root -m 4755 -D crontab $(DESTDIR)/usr/bin/crontab
++	install -o root -g root -m 0644 -D crontab.1 $(DESTDIR)/usr/man/man1/crontab.1
++	install -o root -g root -m 0644 -D  crond.8 $(DESTDIR)/usr/man/man8/crond.8
+ 
+ # dillon-specific
+ #
+diff -Naur dcron-orig/defs.h dcron/defs.h
+--- dcron-orig/defs.h	2002-12-17 12:06:51.000000000 -0800
++++ dcron/defs.h	2003-11-18 17:22:12.000000000 -0800
+@@ -26,7 +26,7 @@
+ #define arysize(ary)	(sizeof(ary)/sizeof((ary)[0]))
+ 
+ #ifndef CRONTABS
+-#define CRONTABS	"/var/spool/cron/crontabs"
++#define CRONTABS	"/var/spool/cron"
+ #endif
+ #ifndef TMPDIR
+ #define TMPDIR		"/tmp"
+@@ -35,7 +35,7 @@
+ #define OPEN_MAX	256
+ #endif
+ #ifndef SENDMAIL
+-#define SENDMAIL	"/usr/lib/sendmail"
++#define SENDMAIL	"/usr/sbin/sendmail"
+ #endif
+ #ifndef SENDMAIL_ARGS
+ #define SENDMAIL_ARGS	"-t", "-oem", "-i"
+diff -Naur dcron-orig/subs.c dcron/subs.c
+--- dcron-orig/subs.c	1999-02-09 22:31:46.000000000 -0800
++++ dcron/subs.c	2003-11-18 17:23:05.000000000 -0800
+@@ -79,7 +79,7 @@
+ 
+     buf[0] = 0;
+     if (useDate)
+-	strftime(buf, 128, "%d-%b-%y %H:%M  ", tp);
++	strftime(buf, 128, "%d-%b-%Y %H:%M  ", tp);
+     vsnprintf(buf + strlen(buf), nmax, ctl, va);
+     return(strlen(buf));
+ }

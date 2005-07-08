@@ -1,0 +1,23 @@
+# $Id: PKGBUILD,v 1.22 2005/04/14 22:18:08 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=openssl
+pkgver=0.9.7g
+pkgrel=1
+pkgdesc="The Open Source toolkit for Secure Sockets Layer and Transport Layer Security"
+url="http://www.openssl.org"
+depends=('glibc')
+source=(http://www.openssl.org/source/$pkgname-$pkgver.tar.gz)
+md5sums=('991615f73338a571b6a1be7d74906934')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./config --prefix=/usr --openssldir=/etc/ssl shared
+  make || return 1
+  make INSTALL_PREFIX=$startdir/pkg MANDIR=/usr/man install
+
+  cd $startdir/pkg/usr/man
+  rm -rf man3 man5 man7
+  cd man1
+  rename '' openssl_ *
+  mv openssl_openssl.1 openssl.1
+}

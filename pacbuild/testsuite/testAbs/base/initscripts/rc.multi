@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# /etc/rc.multi
+#
+
+. /etc/rc.conf
+. /etc/rc.d/functions
+
+# Start daemons
+for daemon in "${DAEMONS[@]}"; do
+	if [[ `echo $daemon | grep '^[^\!]' | wc -l` -eq 1 ]]; then
+		if [[ `echo $daemon | grep '^[^\@]' | wc -l` -eq 1 ]]; then
+			/etc/rc.d/$daemon start
+		else
+                        stat_bkgd "Starting ${daemon:1}"
+			(/etc/rc.d/${daemon:1} start) &>/dev/null &
+		fi
+	fi
+done
+
+if [ -x /etc/rc.local ]; then
+	/etc/rc.local
+fi
+
+# End of file

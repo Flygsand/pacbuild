@@ -1,0 +1,21 @@
+diff -Naur glibc-2.3.4-20041115-orig/sysdeps/unix/sysv/linux/sys/sysctl.h glibc-2.3.4-20041115/sysdeps/unix/sysv/linux/sys/sysctl.h
+--- glibc-2.3.4-20041115-orig/sysdeps/unix/sysv/linux/sys/sysctl.h	2004-04-29 13:09:24.000000000 -0700
++++ glibc-2.3.4-20041115/sysdeps/unix/sysv/linux/sys/sysctl.h	2004-11-15 19:26:57.000000000 -0800
+@@ -22,6 +22,9 @@
+ #include <features.h>
+ #define __need_size_t
+ #include <stddef.h>
++#include <linux/version.h>
++
++#ifndef LIBC_HEADERS_VERSION
+ /* Prevent more kernel headers than necessary to be included.  */
+ #ifndef _LINUX_KERNEL_H
+ # define _LINUX_KERNEL_H	1
+@@ -40,6 +43,7 @@
+ # define __user
+ # define __undef__LINUX_COMPILER_H
+ #endif
++#endif
+ 
+ #include <linux/sysctl.h>
+ 

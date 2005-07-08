@@ -1,0 +1,147 @@
+#!/bin/bash
+
+#
+# This is a little helper script that tries to convert linux-style device
+# names (DevFS or old-style) to grub-style.  It's not very smart, so it
+# probably won't work for more complicated setups.
+#
+# If it doesn't work for you, try installing grub manually:
+#
+#    # mkdir -p /boot/grub
+#    # cp /usr/lib/grub/i386-pc/* /boot/grub/
+#
+# Then start up the 'grub' shell and run something like the following:
+#
+#    grub> root(hd0,0)
+#    grub> setup(hd0)
+#
+# The "root" line should point to the partition your kernel is located on,
+# /boot if you have a separate boot partition, otherwise your root (/).
+#
+# The "setup" line tells grub which disc/partition to install the
+# bootloader to.  In the example above, it will install to the MBR of the
+# primary master hard drive.
+#
+
+usage() {
+	echo "usage: install-grub <install_device> [boot_device]"
+	echo
+	echo "where <install_device> is the device where Grub will be installed"
+	echo "and [boot_device] is the partition that contains the /boot"
+	echo "directory (auto-detected if omitted)"
+	echo
+	echo "examples: install-grub /dev/discs/disc0/disc"
+	echo "          install-grub /dev/discs/disc0/part1 /dev/discs/disc0/part1"
+	echo
+	exit 0
+}
+
+convertdev() {
+	newdev=
+	if [ "`echo $1 | grep ^/dev/hd`" ]; then
+		# device appears to be the old naming style: /dev/hdXY
+		end=`echo $1 | cut -d/ -f3`
+		if [ "`echo $end | grep [0-9]$`" ]; then
+			part=`echo $end | rev | cut -b1`
+			part=$((part-1))
+			drive=`echo $end | rev | cut -b2`
+		else
+			part=
+			drive=`echo $end | rev | cut -b1`
+		fi
+		disc=
+		case $drive in
+			a) disc=0 ;;
+			b) disc=1 ;;
+			c) disc=2 ;;
+			d) disc=3 ;;
+			e) disc=4 ;;
+			f) disc=5 ;;
+			g) disc=6 ;;
+			h) disc=7 ;;
+		esac
+		if [ "$disc" != "" ]; then
+			if [ "$part" != "" ]; then
+				newdev="(hd${disc},$part)"
+			else
+				newdev="(hd${disc})"
+			fi
+		fi
+	else
+		# assume a regular devfs designation: /dev/discs/discX/partY
+		end=`echo $1 | cut -d/ -f5 | cut -b-4`
+		disc=`echo $1 | cut -d/ -f4 | cut -b5`
+		if [ "$end" = "part" ]; then
+			part=`echo $1 | cut -d/ -f5 | cut -b5`
+			part=$(($part-1))
+			newdev="(hd${disc},$part)"
+		elif [ "$end" = "disc" ]; then
+			newdev="(hd${disc})"
+		fi
+	fi
+
+	if [ "$newdev" = "" -a "$2" != "0" ]; then
+		# it may be a /dev/ide/host0/bus0... device name - try finding
+		# the /dev/discs/... equivalent
+		chunk=`echo $1 | cut -d/ -f3- | cut -d/ -f1-5`
+		symdev=`find /dev -lname ../$chunk | grep 'dev/discs'`
+		symdev="$symdev/`echo $1 | cut -d/ -f8`"
+		newdev=`convertdev $symdev 0`
+	fi
+
+	echo "$newdev"
+}
+
+INSTDEV=$1
+BOOTDEV=$2
+
+if [ "$INSTDEV" = "" ]; then
+	usage
+fi
+if [ "$BOOTDEV" = "" ]; then
+	BOOTDEV=`mount | grep "on /boot type" | cut -d' ' -f 1`
+fi
+if [ "$BOOTDEV" = "" ]; then
+	BOOTDEV=`mount | grep "on / type" | cut -d' ' -f 1`
+fi
+if [ "$BOOTDEV" = "" ]; then
+	echo "error: could not determine BOOT_DEVICE, please specify manually" >&2
+	exit 1
+fi
+
+mkdir -p /boot/grub
+cp /usr/lib/grub/i386-pc/* /boot/grub/
+grub_BOOTDEV=`convertdev $BOOTDEV`
+grub_INSTDEV=`convertdev $INSTDEV`
+if [ "$grub_BOOTDEV" = "" ]; then
+	echo "error: could not convert device to grub format: $BOOTDEV" >&2
+	exit 1
+fi
+if [ "$grub_INSTDEV" = "" ]; then
+	echo "error: could not convert device to grub format: $INSTDEV" >&2
+	exit 1
+fi
+echo -e "Install Device: \t$grub_INSTDEV\t\t$INSTDEV"
+echo -e "Boot Device:    \t$grub_BOOTDEV\t\t$BOOTDEV"
+echo
+echo -n "Continue? [Y/n] "
+read confirm
+if [ "$confirm" != "Y" -a "$confirm" != "y" -a "$confirm" != "" ]; then
+	exit 0
+fi
+/sbin/grub --batch 2>&1 >/tmp/grub.log <<EOF
+root $grub_BOOTDEV
+setup $grub_INSTDEV
+quit
+EOF
+cat /tmp/grub.log
+if grep "Error [0-9]*: " /tmp/grub.log >/dev/null; then
+	echo -e "\nGrub installation failed.\n" >&2
+	exit 1
+else
+	echo -e "\nGrub installation finished.\n" >&2
+fi
+rm -f /tmp/grub.log
+
+exit 0
+

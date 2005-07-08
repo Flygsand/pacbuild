@@ -1,0 +1,18 @@
+# $Id: PKGBUILD,v 1.13 2004/05/29 02:27:00 judd Exp $
+# Maintainer: judd <jvinet@zeroflux.org>
+pkgname=kbd
+pkgver=1.12
+pkgrel=1
+pkgdesc="Keytable files and keyboard utilities"
+url="ftp://ftp.win.tue.nl/pub/linux-local/utils/kbd/"
+depends=('glibc')
+source=(ftp://ftp.win.tue.nl/pub/linux-local/utils/$pkgname/$pkgname-$pkgver.tar.gz)
+md5sums=('7892c7010512a9bc6697a295c921da25')
+
+build() {
+  cd $startdir/src/$pkgname-$pkgver
+  ./configure
+  make || return 1
+  make DESTDIR=$startdir/pkg install
+  install -D -m755 src/loadkeys $startdir/pkg/bin/loadkeys
+}

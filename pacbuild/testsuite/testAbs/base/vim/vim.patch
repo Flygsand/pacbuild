@@ -1,0 +1,80 @@
+diff -Naur vim62-orig/runtime/vimrc_example.vim vim62/runtime/vimrc_example.vim
+--- vim62-orig/runtime/vimrc_example.vim	2002-09-19 01:16:52.000000000 -0700
++++ vim62/runtime/vimrc_example.vim	2004-02-18 16:55:38.000000000 -0800
+@@ -1,13 +1,3 @@
+-" An example for a vimrc file.
+-"
+-" Maintainer:	Bram Moolenaar <Bram@vim.org>
+-" Last change:	2002 Sep 19
+-"
+-" To use it, copy it to
+-"     for Unix and OS/2:  ~/.vimrc
+-"	      for Amiga:  s:.vimrc
+-"  for MS-DOS and Win32:  $VIM\_vimrc
+-"	    for OpenVMS:  sys$login:.vimrc
+ 
+ " When started as "evim", evim.vim will already have done these settings.
+ if v:progname =~? "evim"
+@@ -18,29 +8,21 @@
+ " This must be first, because it changes other options as a side effect.
+ set nocompatible
+ 
++" A clean-looking font for gvim
++set guifont="Courier New"
++
+ " allow backspacing over everything in insert mode
+ set backspace=indent,eol,start
+ 
+-if has("vms")
+-  set nobackup		" do not keep a backup file, use versions instead
+-else
+-  set backup		" keep a backup file
+-endif
++set nobackup
+ set history=50		" keep 50 lines of command line history
+ set ruler		" show the cursor position all the time
+ set showcmd		" display incomplete commands
+ set incsearch		" do incremental searching
+ 
+-" For Win32 GUI: remove 't' flag from 'guioptions': no tearoff menu entries
+-" let &guioptions = substitute(&guioptions, "t", "", "g")
+-
+ " Don't use Ex mode, use Q for formatting
+ map Q gq
+ 
+-" This is an alternative that also works in block mode, but the deleted
+-" text is lost and it only works for putting the current register.
+-"vnoremap p "_dp
+-
+ " Switch syntax highlighting on, when the terminal has colors
+ " Also switch on highlighting the last used search pattern.
+ if &t_Co > 2 || has("gui_running")
+diff -Naur vim62-orig/src/Makefile vim62/src/Makefile
+--- vim62-orig/src/Makefile	2003-06-01 06:18:29.000000000 -0700
++++ vim62/src/Makefile	2004-02-18 16:54:46.000000000 -0800
+@@ -1242,7 +1242,6 @@
+ 	ops.c \
+ 	option.c \
+ 	os_unix.c \
+-	auto/pathdef.c \
+ 	quickfix.c \
+ 	regexp.c \
+ 	screen.c \
+@@ -2210,7 +2209,7 @@
+ objects/os_unix.o: os_unix.c
+ 	$(CCC) -o $@ os_unix.c
+ 
+-objects/pathdef.o: auto/pathdef.c
++objects/pathdef.o:
+ 	$(CCC) -o $@ auto/pathdef.c
+ 
+ objects/py_config.o: $(PYTHON_CONFDIR)/config.c
+@@ -2390,7 +2389,7 @@
+  auto/osdef.h ascii.h keymap.h term.h macros.h structs.h regexp.h \
+  gui.h gui_beval.h proto/gui_beval.pro option.h ex_cmds.h proto.h \
+  globals.h farsi.h arabic.h os_unixx.h
+-objects/pathdef.o: auto/pathdef.c vim.h auto/config.h feature.h os_unix.h \
++objects/pathdef.o: vim.h auto/config.h feature.h os_unix.h \
+  auto/osdef.h ascii.h keymap.h term.h macros.h structs.h regexp.h \
+  gui.h gui_beval.h proto/gui_beval.pro option.h ex_cmds.h proto.h \
+  globals.h farsi.h arabic.h

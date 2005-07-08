@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# /etc/cron/cron.monthly
+#
+
+. /etc/cron/rotatelog
+
+rotatelog wtmp
+
+# End of file
+

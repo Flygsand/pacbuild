@@ -1,0 +1,11 @@
+--- zlib-1.2.2.orig/inftrees.c	2004-09-15 15:30:06.000000000 +0100
++++ zlib-1.2.2/inftrees.c	2005-07-02 14:42:24.270321629 +0100
+@@ -134,7 +134,7 @@
+         left -= count[len];
+         if (left < 0) return -1;        /* over-subscribed */
+     }
+-    if (left > 0 && (type == CODES || (codes - count[0] != 1)))
++    if (left > 0 && (type == CODES || max != 1))
+         return -1;                      /* incomplete set */
+ 
+     /* generate offsets into symbol table for each length for sorting */

@@ -21,9 +21,6 @@ class RepoTest(unittest.TestCase):
 	def tearDown(self):
 		shutil.rmtree(self.tmpdir)
 
-	def testGetInstances(self):
-		pass
-
 	def testCategories(self):
 		r = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		repoCats = set(r.categories)
@@ -40,7 +37,7 @@ class RepoTest(unittest.TestCase):
 		r = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		instances = r.instances
 		found = False
-		for i in instances:
+		for path, i in instances:
 			if i.name == 'glibc':
 				found = True
 				self.failUnless(i.version=='2.3.4' and i.release=='2')

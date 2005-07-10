@@ -23,6 +23,7 @@ import os.path
 import package
 from datetime import datetime
 import pacman
+import tarfile
 
 class Repo(SQLObject):
 	name = StringCol(alternateID=True)
@@ -55,11 +56,11 @@ class Repo(SQLObject):
 	def getInstances(self):
 		for path in self.getPkgbuilds(True):
 			pkgbuild = pacman.load(path)
-			yield pkgbuild
+			yield (path, pkgbuild)
 	instances = property(getInstances)
 
 def getInstances(repo, arch):
-	for i in repo.instances:
+	for path, i in repo.instances:
 		try:
 			pkg = package.Package.byName(i.name)
 		except main.SQLObjectNotFound:
@@ -79,9 +80,18 @@ def getInstances(repo, arch):
 				pkgInstance = j
 				break
 		if not pkgInstance:
+			# Time to build source package
+			srcpkg = os.tmpfile()
+			srcpkgtar = tarfile.open(name="", fileobj=srcpkg, mode='w:gz')
+			path = os.path.dirname(path)
+			for j in os.listdir(path):
+				srcpkgtar.add(os.path.join(path, j))
+			srcpkgtar.close()
+			srcpkg.seek(0)
 			pkgInstance = package.PackageInstance(pkgver=i.version,
 			                                      pkgrel=i.release,
 			                                      status='new',
 			                                      timestamp=datetime.now(),
-			                                      packageArch=pkgArch)
+			                                      packageArch=pkgArch,
+			                                      source=srcpkg.read())
 		yield pkgInstance

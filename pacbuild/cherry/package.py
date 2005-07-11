@@ -19,6 +19,7 @@
 # 
 
 from sqlobject import *
+from datetime import datetime
 
 class Package(SQLObject):
 	name = StringCol(alternateID=True)
@@ -39,6 +40,7 @@ class PackageInstance(SQLObject):
 	timestamp = DateTimeCol()
 	log = StringCol(default=None)
 	binary = StringCol(default=None)
+	source = StringCol(default=None)
 
 	def _set_binary(self, value):
 		if value is not None:
@@ -48,8 +50,6 @@ class PackageInstance(SQLObject):
 	def _get_binary(self):
 		return self._SO_get_binary().decode('base64')
 
-	source = StringCol(default=None)
-
 	def _set_source(self, value):
 		if value is not None:
 			self._SO_set_source(value.encode('base64').replace('\n',''))
@@ -58,3 +58,16 @@ class PackageInstance(SQLObject):
 	def _get_source(self):
 		return self._SO_get_source().decode('base64')
 
+	def canQueue(self):
+		q = PackageInstance.select(PackageInstance.q.packageArch==self.packageArch)
+		if self.status == 'new':
+			for i in q:
+				if i.status in ('queued', 'building', 'verifying'):
+					return False
+			return True
+		return False
+
+	def queue(self):
+		if self.canQueue():
+			self.status = 'queued'
+			self.timestamp = datetime.now()

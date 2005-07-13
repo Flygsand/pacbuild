@@ -59,7 +59,7 @@ class PackageInstance(SQLObject):
 		return self._SO_get_source().decode('base64')
 
 	def canQueue(self):
-		q = PackageInstance.select(PackageInstance.q.packageArch==self.packageArch)
+		q = PackageInstance.select(PackageInstance.q.packageArchID==self.packageArch.id)
 		if self.status == 'new':
 			for i in q:
 				if i.status in ('queued', 'building', 'verifying'):

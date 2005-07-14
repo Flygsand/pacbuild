@@ -37,19 +37,25 @@ def handleRepo(repoList):
 	ret = []
 	for i in repoList:
 		try:
-			repo = repo.Repo.byName(i['name'])
-			# TODO: Update repo values
+			r = repo.Repo.byName(i['name'])
+			r.absdir = i['absdir']
+			r.repodir = i['repodir']
+			r.updatescript = i['updatescript']
 		except main.SQLObjectNotFound:
-			repo = repo.Repo(name=i['name'], absdir=i['absdir'], repodir=i['repodir'], updatescript=i['updatescript'])
-		ret.append(repo)
+			r = repo.Repo(name=i['name'], absdir=i['absdir'], repodir=i['repodir'], updatescript=i['updatescript'])
+		ret.append(r)
 
-def main(argv=None):
+def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
+	connect(cherryConfig.database)
+
+	arches = handleArch(cherryConfig.arches)
+	repos = handleRepo(cherryConfig.repos)
 
 	return 0
 
 if __name__ == "__main__":
-	sys.exit(main())
+	sys.exit(_main())
 

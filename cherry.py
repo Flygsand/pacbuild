@@ -54,6 +54,12 @@ def _main(argv=None):
 	arches = handleArch(cherryConfig.arches)
 	repos = handleRepo(cherryConfig.repos)
 
+	for i in arches:
+		for j in repos:
+			instances = getInstances(j, i)
+			if instances.canQueue():
+				instances.queue()
+
 	return 0
 
 if __name__ == "__main__":

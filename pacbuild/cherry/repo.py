@@ -59,6 +59,9 @@ class Repo(SQLObject):
 			yield (path, pkgbuild)
 	instances = property(getInstances)
 
+	def getPackages(self):
+		pass
+
 def getInstances(repo, arch):
 	for path, i in repo.instances:
 		try:

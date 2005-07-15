@@ -71,3 +71,19 @@ class PackageInstance(SQLObject):
 		if self.canQueue():
 			self.status = 'queued'
 			self.timestamp = datetime.now()
+
+	def canFreshen(self):
+		q = PackageInstance.select(PackageInstance.q.packageArchID==self.packageArch.id)
+		if self.status == 'new':
+			for i in q:
+				if i.status == 'queued':
+					return i
+			return False
+		return False
+
+	def freshen(self):
+		oldPkg = self.canFreshen()
+		if oldPkg:
+			oldPkg.status = 'freshened'
+			oldPkg.timestamp = datetime.now()
+			self.queue()

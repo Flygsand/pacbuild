@@ -19,6 +19,7 @@
 
 from sqlobject import *
 import os, os.path
+import datetime
 
 arches = ['i586']
 
@@ -29,3 +30,5 @@ repos = [{'name':'current', 'absdir':'%s/pacbuild/abs'%myHome, 'repodir':'%s/pac
 if not os.path.isdir("%s/.pacbuild"%myHome):
 	os.makedirs("%s/.pacbuild"%myHome)
 database = connectionForURI("sqlite://%s/.pacbuild/pacbuild.db"%myHome)
+
+stalePackageTimeout = datetime.timedelta(days=2)

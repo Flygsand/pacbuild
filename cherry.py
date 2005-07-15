@@ -64,6 +64,8 @@ def _main(argv=None):
 					k.queue()
 				if k.canFreshen():
 					k.freshen()
+				if k.isStale(cherryConfig.stalePackageTimeout):
+					k.unbuild()
 
 	return 0
 

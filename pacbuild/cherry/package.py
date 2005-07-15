@@ -116,6 +116,17 @@ class PackageInstance(SQLObject):
 			if user:
 				self.user = user
 
+	def isStale(self, delta):
+		if self.status == 'building' and datetime.now()-self.timestamp>=delta:
+			return True
+		return False
+
+	def unbuild(self, user=None):
+		if self.status == 'building':
+			self.status = 'queued'
+			self.timestamp = datetime.now()
+			self.user = None
+
 def getNextBuild(arch):
 	packageArchs = arch.packageArchs
 	def cmpArchs(x, y):

@@ -32,6 +32,7 @@ def handleArch(archList):
 		except main.SQLObjectNotFound:
 			arch = misc.Arch(name=i)
 		ret.append(arch)
+	return ret
 
 def handleRepo(repoList):
 	ret = []
@@ -44,6 +45,7 @@ def handleRepo(repoList):
 		except main.SQLObjectNotFound:
 			r = repo.Repo(name=i['name'], absdir=i['absdir'], repodir=i['repodir'], updatescript=i['updatescript'])
 		ret.append(r)
+	return ret
 
 def _main(argv=None):
 	if argv is None:
@@ -56,9 +58,12 @@ def _main(argv=None):
 
 	for i in arches:
 		for j in repos:
-			instances = getInstances(j, i)
-			if instances.canQueue():
-				instances.queue()
+			instances = repo.getInstances(j, i)
+			for k in instances:
+				if k.canQueue():
+					k.queue()
+				if k.canFreshen():
+					k.freshen()
 
 	return 0
 

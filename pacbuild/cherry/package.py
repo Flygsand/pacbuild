@@ -48,7 +48,10 @@ class PackageInstance(SQLObject):
 		else:
 			self._SO_set_binary(None)
 	def _get_binary(self):
-		return self._SO_get_binary().decode('base64')
+		if self._SO_get_binary() == None:
+			return None
+		else:
+			return self._SO_get_binary().decode('base64')
 
 	def _set_source(self, value):
 		if value is not None:
@@ -56,7 +59,10 @@ class PackageInstance(SQLObject):
 		else:
 			self._SO_set_source(None)
 	def _get_source(self):
-		return self._SO_get_source().decode('base64')
+		if self._SO_get_source() == None:
+			return None
+		else:
+			return self._SO_get_source().decode('base64')
 
 	def canQueue(self):
 		q = PackageInstance.select(PackageInstance.q.packageArchID==self.packageArch.id)
@@ -87,3 +93,17 @@ class PackageInstance(SQLObject):
 			oldPkg.status = 'freshened'
 			oldPkg.timestamp = datetime.now()
 			self.queue()
+
+	def canBuild(self):
+		q = PackageInstance.select(PackageInstance.q.packageArchID==self.packageArch.id)
+		if self.status == 'queued':
+			for i in q:
+				if i.status in ('building', 'verifying'):
+					return False
+			return True
+		return False
+
+	def build(self):
+		if self.canBuild():
+			self.status = 'building'
+			self.timestamp = datetime.now()

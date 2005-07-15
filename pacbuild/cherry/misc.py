@@ -30,3 +30,4 @@ class User(SQLObject):
 	password = StringCol()
 	email = StringCol()
 	arch = ForeignKey('Arch')
+	packageInstances = MultipleJoin('PackageInstance')

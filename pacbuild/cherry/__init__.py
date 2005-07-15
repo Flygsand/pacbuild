@@ -18,7 +18,7 @@
 #
 # 
 
-__all__ = ['misc','package','repo']
+__all__ = ['misc','package','repo', 'rpc']
 
 import misc, package, repo
 from sqlobject import *
@@ -42,6 +42,9 @@ def connect(conn):
 def authUser(name, password):
 	try:
 		user = misc.User.byName(name)
-		return user.password == password
+		if user.password == password:
+			return user
+		else:
+			return False
 	except main.SQLObjectNotFound:
 		return False

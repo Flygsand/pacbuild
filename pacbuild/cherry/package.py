@@ -32,6 +32,11 @@ class PackageArch(SQLObject):
 	package = ForeignKey('Package')
 	packageInstances = MultipleJoin('PackageInstance')
 
+	def getInstance(self):
+		for i in self.packageInstances:
+			if i.status == 'queued':
+				return i
+
 class PackageInstance(SQLObject):
 	packageArch = ForeignKey('PackageArch')
 	pkgver = StringCol()
@@ -41,6 +46,7 @@ class PackageInstance(SQLObject):
 	log = StringCol(default=None)
 	binary = StringCol(default=None)
 	source = StringCol(default=None)
+	user = ForeignKey('User', default=None)
 
 	def _set_binary(self, value):
 		if value is not None:
@@ -103,7 +109,27 @@ class PackageInstance(SQLObject):
 			return True
 		return False
 
-	def build(self):
+	def build(self, user=None):
 		if self.canBuild():
 			self.status = 'building'
 			self.timestamp = datetime.now()
+			if user:
+				self.user = user
+
+def getNextBuild(arch):
+	packageArchs = arch.packageArchs
+	def cmpArchs(x, y):
+		xInstance = x.getInstance()
+		yInstance = y.getInstance()
+		if xInstance == None and yInstance != None:
+			return 1
+		elif xInstance != None and yInstance == None:
+			return -1
+		elif xInstance == None and yInstance == None:
+			return 0
+		return x.getInstance().timestamp == y.getInstance().timestamp
+	packageArchs.sort(cmp=cmpArchs)
+	if len(packageArchs) >= 1:
+		return packageArchs[0].getInstance()
+	else:
+		return None

@@ -19,7 +19,7 @@
 # 
 
 import sys
-from pacbuild.cherry import repo, misc, connect, package
+from pacbuild.cherry import repo, misc, connect, package, rpc
 from sqlobject import *
 
 import cherryConfig
@@ -56,16 +56,24 @@ def _main(argv=None):
 	arches = handleArch(cherryConfig.arches)
 	repos = handleRepo(cherryConfig.repos)
 
-	for i in arches:
-		for j in repos:
-			instances = repo.getInstances(j, i)
-			for k in instances:
-				if k.canQueue():
-					k.queue()
-				if k.canFreshen():
-					k.freshen()
-				if k.isStale(cherryConfig.stalePackageTimeout):
-					k.unbuild()
+	rpc.init()
+
+	try:
+		while True:
+			for i in arches:
+				for j in repos:
+					instances = repo.getInstances(j, i)
+					for k in instances:
+						if k.canQueue():
+							k.queue()
+						if k.canFreshen():
+							k.freshen()
+						if k.isStale(cherryConfig.stalePackageTimeout):
+							k.unbuild()
+
+			rpc.process()
+	except KeyboardInterrupt:
+		pass
 
 	return 0
 

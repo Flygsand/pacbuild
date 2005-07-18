@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# include for enviromental settings
+source /etc/makepkg.conf
+# get configuration stuff
+source /mnt/temp/wakachroot/mkchroot.conf
+# now get some function library of ours up
+source $WAKA_ROOT_DIR/functions
+
+CLEANUP=1
+
+if [ "$1" != "" -o -f $1 ]; then
+	TARBALL=$1
+else
+	usage
+	exit 1
+fi
+
+if [ -z $2 ]; then
+	PKGDEST=$DEFAULT_PKGDEST
+else
+	PKGDEST=$2
+fi
+
+if [ -z $3 ]; then
+	LOGDEST=$DEFAULT_PKGDEST
+else
+	LOGDEST=$3
+fi
+
+
+makeroot
+fs_bind
+(quickinst)
+
+# mount kernel stuff to make system sane
+fs_mount
+
+# copy general configuration from host system
+conf_update
+
+if [ -f $TARBALL ]; then
+	msg "Starting to build package..."
+	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka
+	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/ || error "Source tarball not found!"
+
+	cp build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	sed -i "s|#TARBALL#|${TARBALL}|g"       $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	
+	chmod +x $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	chroot $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/ /waka/build
+	source $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/PKGBUILD
+
+	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/$pkgname-$pkgver-$pkgrel.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
+	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
+else
+	error "Could not find source tarball!"
+	exit 2
+fi
+
+fs_unbind
+fs_umount
+
+if [ ${CLEANUP} = 1 ]; then
+	cleanup
+fi

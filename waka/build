@@ -1,0 +1,7 @@
+#!/bin/bash
+source /etc/profile
+cd /waka
+pacman -Sy
+pacman --noconfirm -S #KERNEL#
+tar xzfp #TARBALL#
+(makepkg -s 1>makepkg.log 2>&1)

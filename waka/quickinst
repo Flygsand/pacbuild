@@ -1,0 +1,90 @@
+#!/bin/sh
+# $Id: quickinst,v 1.10 2005/05/27 01:53:48 judd Exp $
+usage() {
+	echo "quickinst <install_mode> <destdir> <package_directory|server_url>"
+	echo
+	echo "This script is for users who would rather partition/mkfs/mount their target"
+	echo "media manually than go through the routines in the setup script."
+	echo
+	echo "First make sure you have all your filesystems mounted under <destdir>."
+	echo "Then run this script to install all base packages to <destdir>."
+	echo
+	echo "<install_mode> must be either 'ftp' or 'cd'"
+	echo
+	echo "Examples:"
+	echo "  quickinst ftp /mnt ftp://ftp.archlinux.org/current/os/i686"
+	echo "  quickinst cd  /mnt /src/arch/pkg"
+	echo ""
+	exit 0
+}
+
+INSTMODE=$1
+DESTDIR=$2
+PKGARG=$3
+
+if [ "$PKGARG" = "" ]; then
+	usage
+fi
+
+# sometimes this gets mounted RO, dunno why
+/bin/mount -o remount,rw /
+
+PACMAN=
+[ -f /tmp/usr/bin/pacman.static ] && PACMAN=/tmp/usr/bin/pacman.static
+[ -f /usr/bin/pacman.static ] && PACMAN=/usr/bin/pacman.static
+if [ "$PACMAN" = "" ]; then
+	cd /tmp
+	if [ "$INSTMODE" = "ftp" ]; then
+		echo "Downloading pacman..."
+		snarf $PKGARG/setup/pacman.pkg.tar.gz
+		if [ $? -gt 0 ]; then
+			echo "error: Download failed"
+			exit 1
+		fi
+		tar -xzf pacman.pkg.tar.gz
+	elif [ "$INSTMODE" = "cd" ]; then
+		echo "Unpacking pacman..."
+		tar -xzf $PKGARG/setup/pacman.pkg.tar.gz
+	fi
+fi
+[ -f /tmp/usr/bin/pacman.static ] && PACMAN=/tmp/usr/bin/pacman.static
+if [ "$PACMAN" = "" ]; then
+	echo "error: Cannot find the pacman.static binary!"
+	exit 1
+fi
+
+if [ "$INSTMODE" = "ftp" ]; then
+	PKGFILE=/tmp/packages.txt
+	cd /tmp
+	snarf $PKGARG/setup/packages.txt
+	if [ $? -gt 0 ]; then
+		echo "error: Could not fetch package list from server"
+		exit 1
+	fi
+	echo "[current]" >/tmp/pacman.conf
+	echo "Server = $PKGARG" >>/tmp/pacman.conf
+fi
+
+if [ "$INSTMODE" = "cd" ]; then
+	PKGFILE=$PKGARG/setup/packages.txt
+	if [ ! -f $PKGFILE ]; then
+		echo "error: Could not find package list: $PKGFILE"
+		exit 1
+	fi
+	echo "[current]" >/tmp/pacman.conf
+	echo "Server = file://$PKGARG" >>/tmp/pacman.conf
+fi
+
+PKGLIST=
+for i in `cat $PKGFILE | grep 'base/' | cut -d/ -f2`; do
+	nm=${i%-*-*}
+	PKGLIST="$PKGLIST $nm"
+done
+mkdir -p $DESTDIR/var/cache/pacman
+$PACMAN -r $DESTDIR --noconfirm --config /tmp/pacman.conf -Sy $PKGLIST
+if [ $? -gt 0 ]; then
+	echo
+	echo "Package installation FAILED."
+	echo
+	exit 1
+fi

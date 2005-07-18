@@ -1,0 +1,122 @@
+#!/bin/bash
+########################################
+# basic eyecandy stuff
+########################################
+plain() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "    \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "    $1" >&2
+	fi
+}
+
+msg() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "\033[1;32m==>\033[1;0m \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "==> $1" >&2
+	fi
+}
+
+warning() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "\033[1;33m==> WARNING:\033[1;0m \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "==> WARNING: $1" >&2
+	fi
+}
+
+error() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "\033[1;31m==> ERROR:\033[1;0m \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "==> ERROR: $1" >&2
+	fi
+	exit 2
+}
+
+usage() {
+	msg "mkchroot version $myver"
+	msg "usage: $0 [options]"
+	msg  "options:"
+	msg  "  -h, --help       This help"
+	msg  "  -b, --builddeps  Build missing dependencies from source"
+	msg  "  -c, --clean      Clean up work files after build"
+	msg  "  -d, --nodeps     Skip all dependency checks"
+	msg  "  -f, --force      Overwrite existing package"
+	msg  "  -g, --genmd5     Generate MD5sums for source files"
+	msg  "  -m, --nocolor    Disable colorized output messages"
+	msg  "  -n, --nostrip    Do not strip binaries/libraries"
+	msg  "  -p <buildscript> Use an alternate build script (instead of PKGBUILD)"
+	msg  "  -w <destdir>     Write package to <destdir> instead of the working dir"
+}
+
+
+########################################
+# wakachroot functions
+########################################
+cleanup() {
+	if [ -d $WAKA_CHROOT_DIR ]; then
+		msg "Removing old virtual root... (This may take a while)"
+		rm -rf $WAKA_CHROOT_DIR 
+	fi
+}
+
+makeroot() {
+	cleanup
+	mkdir $WAKA_CHROOT_DIR
+}
+
+fs_mount() {
+	msg "Mounting sysfs..."
+		mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys
+	msg "Mounting procfs..."
+		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
+		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
+	msg "Mounting devfs..."
+		mount -t devfs  devfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
+		mount -t devpts devpts $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev/pts
+}
+
+fs_umount() {
+	msg "Umounting sysfs..."
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys
+	msg "Umounting procfs..."
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
+	msg "Umounting devfs..."
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev/pts
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
+}
+
+fs_bind() {
+	msg "Using global package cache..."
+		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
+		mount --bind /var/cache/pacman/pkg/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
+	msg "Using global source cache..."
+		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
+		mount --bind /var/cache/pacman/src/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src/
+}
+
+fs_unbind() {
+	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
+	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
+}
+
+quickinst() {
+	if [ -f /tmp/packages.txt ]; then
+		rm /tmp/packages.txt
+	fi
+	msg "Running ${QUIKINST_LOCATION} ftp ${WAKA_ROOT_DIR}/${WAKA_CHROOT_DIR} ${PACKAGE_MIRROR_CURRENT}"
+	. $QUIKINST_LOCATION ftp $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR $PACKAGE_MIRROR_CURRENT
+}
+
+conf_update() {
+	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc
+
+	echo "[current]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+	echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+
+	echo "[extra]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+	echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+}

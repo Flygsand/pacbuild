@@ -121,7 +121,7 @@ class PackageInstance(SQLObject):
 			return True
 		return False
 
-	def unbuild(self, user=None):
+	def unbuild(self):
 		if self.status == 'building':
 			self.status = 'queued'
 			self.timestamp = datetime.now()

@@ -46,7 +46,8 @@ class ThreadedXMLRPC(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRP
 
 def init():
 	global server
-	server = ThreadedXMLRPC(("", 8888))
+	server = SimpleXMLRPCServer.SimpleXMLRPCServer(("", 8888))
+	server.register_instance(RPCDaemon())
 
 def process():
 	if len(select.select([server.fileno()],[],[],1)) > 0:

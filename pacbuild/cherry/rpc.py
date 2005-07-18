@@ -22,6 +22,7 @@ import SimpleXMLRPCServer
 import SocketServer
 import package
 from pacbuild.cherry import authUser
+import select
 
 server = None
 

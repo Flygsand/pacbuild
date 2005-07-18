@@ -8,6 +8,7 @@ import shutil
 from pacbuild.cherry import repo, package, misc, connect
 from sqlobject import *
 from datetime import datetime
+from datetime import timedelta
 
 class PackageTest(unittest.TestCase):
 	def setUp(self):
@@ -18,6 +19,7 @@ class PackageTest(unittest.TestCase):
 		connect(conn)
 		self.repo = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		self.arch = misc.Arch(name='i586') 
+		self.user = misc.User(name='jchu', password='a', email='a', arch=self.arch)
 		shutil.copytree('pacbuild/testsuite/testAbs', '%s/abs'%self.tmpdir)
 
 	def tearDown(self):
@@ -177,6 +179,50 @@ class PackageTest(unittest.TestCase):
 		dbInstance1.build()
 		self.failUnless(dbInstance1.status == 'build-error')
 		dbInstance2.build()
+		self.failUnless(dbInstance2.status == 'new')
+
+	def testIsStale(self):
+		glibc = package.Package(name="glibc", repo=self.repo)
+		distcc = package.Package(name="distcc", repo=self.repo)
+		db = package.Package(name='db', repo=self.repo)
+
+		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
+		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
+		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
+
+		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='building', timestamp=datetime.now())
+		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
+
+		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
+
+		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='building', timestamp=datetime.now())
+
+		self.failUnless(glibcInstance1.isStale(timedelta(seconds=0)))
+		self.failIf(glibcInstance2.isStale(timedelta(seconds=0)))
+		self.failIf(distccInstance.isStale(timedelta(seconds=0)))
+		self.failIf(dbInstance1.isStale(timedelta(days=2)))
+
+	def testUnBuild(self):
+		glibc = package.Package(name="glibc", repo=self.repo)
+		db = package.Package(name='db', repo=self.repo)
+
+		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
+		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
+
+		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='building', timestamp=datetime.now(), user=self.user)
+		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
+
+		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='building', timestamp=datetime.now(), user=self.user)
+		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
+
+		glibcInstance1.unbuild()
+		self.failUnless(glibcInstance1.status == 'queued')
+		self.failUnless(glibcInstance1.user == None)
+		glibcInstance2.unbuild()
+		self.failUnless(glibcInstance2.status == 'new')
+		dbInstance1.unbuild()
+		self.failUnless(dbInstance1.status == 'queued')
+		dbInstance2.unbuild()
 		self.failUnless(dbInstance2.status == 'new')
 
 if __name__ == "__main__":

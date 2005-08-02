@@ -26,7 +26,7 @@ url = 'http://localhost:8888'
 
 buildDir = '/mnt/temp/wakachroot'
 
-maxBuilds = 3
+maxBuilds = 1
 
 myHome = os.path.expanduser("~")
 

@@ -141,6 +141,7 @@ class PackageInstance(SQLObject):
 	def doneBuild(self):
 		if self.status == 'building':
 			self.status = 'verifying'
+			self.timestamp = datetime.now()
 
 def getNextBuild(arch):
 	packageArchs = arch.packageArchs

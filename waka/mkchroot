@@ -2,30 +2,76 @@
 
 # include for enviromental settings
 source /etc/makepkg.conf
-# get configuration stuff
-source /mnt/temp/wakachroot/mkchroot.conf
-# now get some function library of ours up
-source $WAKA_ROOT_DIR/functions
+## get configuration stuff
+#source /mnt/temp/wakachroot/mkchroot.conf
 
 CLEANUP=1
 
-if [ "$1" != "" -o -f $1 ]; then
-	TARBALL=$1
-else
+ARGLIST=$@
+TARBALL=""
+PKGDEST=""
+LOGDEST=""
+CONFIGFILE="/etc/mkchroot.conf"
+
+while [ "$#" -ne "0" ]; do
+	case $1 in
+		--help)
+			usage
+			exit 0
+			;;
+		--*)
+			usage
+			exit 1
+			;;
+		-*)
+			while getopts "ht:w:l:o:" opt; do
+				case $opt in
+					h)
+						usage
+						exit 0
+						;;
+					w) PKGDEST=$OPTARG ;;
+					l) LOGDEST=$OPTARG ;;
+					o) CONFIGFILE=$OPTARG ;;
+					*)
+						usage
+						exit 1
+						;;
+				esac
+			done
+			;;
+		*)
+			if [ "$TARBALL" = "" ]; then
+				TARBALL=$1
+			fi
+			;;
+	esac
+	shift
+done
+
+if [ ! -f $CONFIGFILE ]; then
+	msg "No config file found: $CONFIGFILE"
 	usage
 	exit 1
 fi
 
-if [ -z $2 ]; then
-	PKGDEST=$DEFAULT_PKGDEST
-else
-	PKGDEST=$2
+# get configuration stuff
+source $CONFIGFILE
+# now get some function library of ours up
+source /usr/share/waka/functions
+
+if [ "$TARBALL" = "" -o ! -f "$TARBALL" ]; then
+	msg "Source package not found"
+	usage
+	exit 1
 fi
 
-if [ -z $3 ]; then
+if [ "$PKGDEST" = "" ]; then
+	PKGDEST=$DEFAULT_PKGDEST
+fi
+
+if [ "$LOGDEST" = "" ]; then
 	LOGDEST=$DEFAULT_PKGDEST
-else
-	LOGDEST=$3
 fi
 
 
@@ -40,15 +86,15 @@ fs_mount
 conf_update
 
 if [ -f $TARBALL ]; then
-	msg "Starting to build package..."
 	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka
 	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/ || error "Source tarball not found!"
 
-	cp build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	cp /usr/share/waka/build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	sed -i "s|#TARBALL#|${TARBALL}|g"       $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	
 	chmod +x $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	msg "Starting to build package..."
 	chroot $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/ /waka/build
 	source $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/PKGBUILD
 
@@ -62,6 +108,6 @@ fi
 fs_unbind
 fs_umount
 
-if [ ${CLEANUP} = 1 ]; then
+if [ ${CLEANUP} -eq 1 ]; then
 	cleanup
 fi

@@ -37,18 +37,20 @@ error() {
 
 usage() {
 	msg "mkchroot version $myver"
-	msg "usage: $0 [options]"
+	msg "usage: $0 [options] <source package>"
 	msg  "options:"
 	msg  "  -h, --help       This help"
-	msg  "  -b, --builddeps  Build missing dependencies from source"
-	msg  "  -c, --clean      Clean up work files after build"
-	msg  "  -d, --nodeps     Skip all dependency checks"
-	msg  "  -f, --force      Overwrite existing package"
-	msg  "  -g, --genmd5     Generate MD5sums for source files"
-	msg  "  -m, --nocolor    Disable colorized output messages"
-	msg  "  -n, --nostrip    Do not strip binaries/libraries"
-	msg  "  -p <buildscript> Use an alternate build script (instead of PKGBUILD)"
+#	msg  "  -b, --builddeps  Build missing dependencies from source"
+#	msg  "  -c, --clean      Clean up work files after build"
+#	msg  "  -d, --nodeps     Skip all dependency checks"
+#	msg  "  -f, --force      Overwrite existing package"
+#	msg  "  -g, --genmd5     Generate MD5sums for source files"
+#	msg  "  -m, --nocolor    Disable colorized output messages"
+#	msg  "  -n, --nostrip    Do not strip binaries/libraries"
+#	msg  "  -p <buildscript> Use an alternate build script (instead of PKGBUILD)"
 	msg  "  -w <destdir>     Write package to <destdir> instead of the working dir"
+	msg  "  -l <destdir>     Write build log to <destdir> instead of the working dir"
+	msg  "  -o <configfile>  Use an alternate config file"
 }
 
 
@@ -93,13 +95,13 @@ fs_bind() {
 	msg "Using global package cache..."
 		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
 		mount --bind /var/cache/pacman/pkg/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
-	msg "Using global source cache..."
-		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
-		mount --bind /var/cache/pacman/src/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src/
+#	msg "Using global source cache..."
+#		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
+#		mount --bind /var/cache/pacman/src/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src/
 }
 
 fs_unbind() {
-	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
+#	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
 	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
 }
 

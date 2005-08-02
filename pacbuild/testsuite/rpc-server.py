@@ -52,5 +52,34 @@ class RpcServerTest(unittest.TestCase):
 		nextBuild = daemon.getNextBuild('jchu', 'a')
 		self.failUnless(nextBuild == None)
 
+	def testSubmitBuild(self):
+		glibc = package.Package(name="glibc", repo=self.repo)
+		distcc = package.Package(name="distcc", repo=self.repo)
+		db = package.Package(name='db', repo=self.repo)
+
+		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
+		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
+		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
+
+		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), source='')
+
+		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now(), source='')
+
+		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now(), source='')
+		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='queued', timestamp=datetime.now(), source='')
+
+		daemon = rpc.RPCDaemon()
+		nextBuild = daemon.getNextBuild('jchu', 'a')
+		res = daemon.submitBuild('jchu', 'b', nextBuild[0], 'built'.encode('base64'), 'this is a log')
+		self.failUnless(res == False)
+
+		res = daemon.submitBuild('jchu', 'a', nextBuild[0], 'built'.encode('base64'), 'this is a log')
+		self.failUnless(res == True)
+		self.failUnless(glibcInstance1.binary == 'built')
+		self.failUnless(glibcInstance1.log == 'this is a log')
+
+		res = daemon.submitBuild('jchu', 'a', distccInstance.id, 'built'.encode('base64'), 'this is a log')
+		self.failUnless(res == False)
+
 if __name__ == "__main__":
 	unittest.main()

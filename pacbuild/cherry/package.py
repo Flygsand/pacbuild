@@ -127,6 +127,21 @@ class PackageInstance(SQLObject):
 			self.timestamp = datetime.now()
 			self.user = None
 
+	def isLogError(self):
+		if self.log is not None:
+			logstring = ''.join(self.log)
+			if ">>>>>>>>>> Error building <<<<<<<<<<" in logstring:
+				return True
+		return False
+
+	def buildError(self):
+		if self.isLogError():
+			self.status = 'build-error'
+
+	def doneBuild(self):
+		if self.status == 'building':
+			self.status = 'verifying'
+
 def getNextBuild(arch):
 	packageArchs = arch.packageArchs
 	def cmpArchs(x, y):

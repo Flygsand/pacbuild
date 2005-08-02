@@ -39,7 +39,24 @@ class RPCDaemon:
 			return None
 		nextBuild.build(user)
 		return (nextBuild.id, '%s-%s-%s.src.tar.gz'%(nextBuild.packageArch.package.name, nextBuild.pkgver, nextBuild.pkgrel), nextBuild.source.encode('base64'))
-		
+
+	def submitBuild(self, user, password, buildId, data, log):
+		user = authUser(user, password)
+		if not user:
+			return False
+		build = package.PackageInstance.get(buildId)
+		if build.user != user:
+			return False
+		if build.status != 'building':
+			return False
+		build.binary = data.decode('base64')
+		build.log = log
+
+		if build.isLogError():
+			build.buildError()
+
+		build.doneBuild()
+		return True
 
 class ThreadedXMLRPC(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
 	pass

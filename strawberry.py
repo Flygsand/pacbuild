@@ -44,18 +44,36 @@ class Build(SQLObject):
 			return self._SO_get_source().decode('base64')
 
 class Waka(threading.Thread):
-	def __init__(self, buildDir, **other):
+	def __init__(self, filename, fileData, buildDir, **other):
 		threading.Thread.__init__(self, *other)
 		self.buildDir = buildDir
-		makeWakaConf()
+		self.filename = filename
+		self.sourcePkg = os.path.join(self.buildDir, self.filename)
+		self.makeWakaConf()
+		self.makeSourceFile(fileData)
+
+	def makeSourceFile(self, fileData):
+		file = open(self.sourcePkg, "wb")
+		file.write(fileData)
+		file.close()
 
 	def makeWakaConf(self):
-		if (not os.path.isDir(self.buildDir)):
+		if (not os.path.isdir(self.buildDir)):
 			os.makedirs(self.buildDir)
-		
+		self.mkchrootPath = os.path.join(self.buildDir,"mkchroot.conf")
+		conf = open(self.mkchrootPath, "w")
+		conf.write('WAKA_ROOT_DIR="%s"\n'%self.buildDir)
+		conf.write('WAKA_CHROOT_DIR="chroot/"\n')
+		conf.write('QUIKINST_LOCATION="/usr/share/waka/quickinst"\n')
+		conf.write('PACKAGE_MIRROR_CURRENT="ftp://ftp.archlinux.org/current/os/${CARCH}"\n')
+		conf.write('PACKAGE_MIRROR_EXTRA="ftp://ftp.archlinux.org/extra/os/${CARCH}"\n')
+		conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
+		conf.write('DEFAULT_KERNEL=kernel26\n')
+		conf.close()
 
 	def run(self):
-		pass
+		os.system("/usr/bin/mkchroot -o %s %s"%(self.mkchrootPath, self.sourcePkg))
+		# Do the post build stuff
 
 def canBuild():
 	return Build.select().count() < strawberryConfig.maxBuilds
@@ -74,11 +92,21 @@ def _main(argv=None):
 	Build.setConnection(strawberryConfig.database)
 	Build.createTable(ifNotExists=True)
 
+	# Start any builds that never actually finished last time
+	for i in Build.select():
+		waka = Waka(i.sourceFilename, i.source, os.path.join(strawberryConfig.buildDir, i.sourceFilename))
+		waka.start()
+
 	while True:
 		if canBuild():
 			build = getNextBuild()
-			print "Got a new build: %s" % build.sourceFilename
-			# This is where you'd set up waka
+			if build is not None:
+				print "Got a new build: %s" % build.sourceFilename
+				
+				# This is where you'd set up waka
+				waka = Waka(build.sourceFilename, build.source, os.path.join(strawberryConfig.buildDir, build.sourceFilename))
+				waka.start()
+			
 
 if __name__ == "__main__":
 	sys.exit(_main())

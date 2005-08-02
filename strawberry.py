@@ -77,6 +77,15 @@ class Waka(threading.Thread):
 	def run(self):
 		os.system("/usr/bin/mkchroot -o %s %s"%(self.mkchrootPath, self.sourcePkg))
 		# Do the post build stuff
+		self.binaryPkg = re.sub('\.src\.tar\.gz$', '.pkg.tar.gz', self.sourcePkg)
+		self.logFile = re.sub('\.src\.tar\.gz$', '.makepkg.log', self.sourcePkg)
+
+		if os.path.isfile(self.binaryPkg):
+			binary = open(self.binaryPkg).read()
+		else:
+			binary = None
+		log = open(self.logFile).read()
+		sendBuild(self.build, binary, log)
 
 def canBuild():
 	return Build.select().count() < strawberryConfig.maxBuilds
@@ -88,6 +97,14 @@ def getNextBuild():
 		return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
 	return None
 
+def sendBuild(build, binary, log):
+	server = xmlrpclib.ServerProxy(strawberryConfig.url)
+	if binary is not None:
+		bin64 = binary.encode('base64')
+	else:
+		bin64 = None
+	server.submitBuild(strawberryConfig.user, strawberryConfig.password, build.cherryId, bin64, log.encode('base64'))
+
 def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
@@ -95,10 +112,13 @@ def _main(argv=None):
 	Build.setConnection(strawberryConfig.database)
 	Build.createTable(ifNotExists=True)
 
+	threads = []
+
 	# Start any builds that never actually finished last time
 	for i in Build.select():
 		waka = Waka(i, os.path.join(strawberryConfig.buildDir, i.sourceFilename))
 		waka.start()
+		threads.append(waka)
 
 	while True:
 		if canBuild():
@@ -109,6 +129,13 @@ def _main(argv=None):
 				# This is where you'd set up waka
 				waka = Waka(build, os.path.join(strawberryConfig.buildDir, build.sourceFilename))
 				waka.start()
+				threads.append(waka)
+		for i, v in enumerate(threads):
+			if not v.isAlive():
+				print "Cleaning up from thread"
+				Build.delete(waka.build.id)
+				del threads[i]
+		time.sleep(10)
 			
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ import SocketServer
 import package
 from pacbuild.cherry import authUser
 import select
+from sqlobject import *
 
 server = None
 
@@ -44,7 +45,10 @@ class RPCDaemon:
 		user = authUser(user, password)
 		if not user:
 			return False
-		build = package.PackageInstance.get(buildId)
+		try:
+			build = package.PackageInstance.get(buildId)
+		except main.SQLObjectNotFound:
+			return False
 		if build.user != user:
 			return False
 		if build.status != 'building':

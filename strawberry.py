@@ -22,6 +22,8 @@ import sys
 import xmlrpclib
 import threading
 import os, os.path
+import re
+import time
 
 from sqlobject import *
 
@@ -44,13 +46,14 @@ class Build(SQLObject):
 			return self._SO_get_source().decode('base64')
 
 class Waka(threading.Thread):
-	def __init__(self, filename, fileData, buildDir, **other):
+	def __init__(self, build, buildDir, **other):
 		threading.Thread.__init__(self, *other)
 		self.buildDir = buildDir
-		self.filename = filename
+		self.build = build
+		self.filename = build.sourceFilename
 		self.sourcePkg = os.path.join(self.buildDir, self.filename)
 		self.makeWakaConf()
-		self.makeSourceFile(fileData)
+		self.makeSourceFile(build.source)
 
 	def makeSourceFile(self, fileData):
 		file = open(self.sourcePkg, "wb")
@@ -94,7 +97,7 @@ def _main(argv=None):
 
 	# Start any builds that never actually finished last time
 	for i in Build.select():
-		waka = Waka(i.sourceFilename, i.source, os.path.join(strawberryConfig.buildDir, i.sourceFilename))
+		waka = Waka(i, os.path.join(strawberryConfig.buildDir, i.sourceFilename))
 		waka.start()
 
 	while True:
@@ -104,7 +107,7 @@ def _main(argv=None):
 				print "Got a new build: %s" % build.sourceFilename
 				
 				# This is where you'd set up waka
-				waka = Waka(build.sourceFilename, build.source, os.path.join(strawberryConfig.buildDir, build.sourceFilename))
+				waka = Waka(build, os.path.join(strawberryConfig.buildDir, build.sourceFilename))
 				waka.start()
 			
 

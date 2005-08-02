@@ -21,7 +21,7 @@
 import sys
 import xmlrpclib
 import threading
-import os, os.dir
+import os, os.path
 
 from sqlobject import *
 

@@ -56,15 +56,15 @@ usage() {
 # wakachroot functions
 ########################################
 cleanup() {
-	if [ -d $WAKA_CHROOT_DIR ]; then
+	if [ -d $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR ]; then
 		msg "Removing old virtual root... (This may take a while)"
-		rm -rf $WAKA_CHROOT_DIR 
+		rm -rf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR 
 	fi
 }
 
 makeroot() {
 	cleanup
-	mkdir $WAKA_CHROOT_DIR
+	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
 }
 
 fs_mount() {

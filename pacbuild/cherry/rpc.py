@@ -53,8 +53,9 @@ class RPCDaemon:
 			return False
 		if build.status != 'building':
 			return False
-		build.binary = data.decode('base64')
-		build.log = log
+		if data is not None:
+			build.binary = data.decode('base64')
+		build.log = log.decode('base64')
 
 		if build.isLogError():
 			build.buildError()

@@ -99,7 +99,8 @@ if [ -f $TARBALL ]; then
 	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/ || error "Source tarball not found!"
 
 	cp /usr/share/waka/build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
-	sed -i "s|#TARBALL#|${TARBALL}|g"       $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	JUSTTARBALL=`basename $TARBALL`
+	sed -i "s|#TARBALL#|${JUSTTARBALL}|g"       $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	
 	chmod +x $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build

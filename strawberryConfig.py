@@ -24,7 +24,7 @@ user = 'jchu'
 password = 'a'
 url = 'http://localhost:8888'
 
-buildDir = '/home/jchu/waka'
+buildDir = '/mnt/temp/wakachroot'
 
 maxBuilds = 3
 

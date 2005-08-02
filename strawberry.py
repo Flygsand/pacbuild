@@ -20,6 +20,8 @@
 
 import sys
 import xmlrpclib
+import threading
+import os, os.dir
 
 from sqlobject import *
 
@@ -40,6 +42,20 @@ class Build(SQLObject):
 			return None
 		else:
 			return self._SO_get_source().decode('base64')
+
+class Waka(threading.Thread):
+	def __init__(self, buildDir, **other):
+		threading.Thread.__init__(self, *other)
+		self.buildDir = buildDir
+		makeWakaConf()
+
+	def makeWakaConf(self):
+		if (not os.path.isDir(self.buildDir)):
+			os.makedirs(self.buildDir)
+		
+
+	def run(self):
+		pass
 
 def canBuild():
 	return Build.select().count() < strawberryConfig.maxBuilds

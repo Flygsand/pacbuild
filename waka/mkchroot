@@ -30,9 +30,18 @@ while [ "$#" -ne "0" ]; do
 						usage
 						exit 0
 						;;
-					w) PKGDEST=$OPTARG ;;
-					l) LOGDEST=$OPTARG ;;
-					o) CONFIGFILE=$OPTARG ;;
+					w)
+						PKGDEST=$OPTARG
+						shift
+						;;
+					l)
+						LOGDEST=$OPTARG
+						shift
+						;;
+					o)
+						CONFIGFILE=$OPTARG
+						shift
+						;;
 					*)
 						usage
 						exit 1

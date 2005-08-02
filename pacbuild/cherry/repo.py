@@ -88,7 +88,7 @@ def getInstances(repo, arch):
 			srcpkgtar = tarfile.open(name="", fileobj=srcpkg, mode='w:gz')
 			path = os.path.dirname(path)
 			for j in os.listdir(path):
-				srcpkgtar.add(os.path.join(path, j))
+				srcpkgtar.add(os.path.join(path, j), arcname=j)
 			srcpkgtar.close()
 			srcpkg.seek(0)
 			pkgInstance = package.PackageInstance(pkgver=i.version,

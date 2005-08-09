@@ -143,6 +143,21 @@ class PackageInstance(SQLObject):
 			self.status = 'verifying'
 			self.timestamp = datetime.now()
 
+	def canAccept(self):
+		if self.status == 'verifying':
+			return True
+
+	def accept(self):
+		if self.canAccept():
+			self.status = 'accepted'
+			self.timestamp = datetime.now()
+			packageArch.package.repo.addFile(self)
+
+	def invalid(self):
+		if self.canAccept():
+			self.status = 'invalid'
+			self.timestamp = datetime.now()
+
 def getNextBuild(arch):
 	packageArchs = arch.packageArchs
 	def cmpArchs(x, y):

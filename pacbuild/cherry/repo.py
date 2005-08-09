@@ -62,6 +62,9 @@ class Repo(SQLObject):
 	def getPackages(self):
 		pass
 
+	def addFile(self):
+		pass
+
 def getInstances(repo, arch):
 	for path, i in repo.instances:
 		try:

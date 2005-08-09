@@ -3,5 +3,14 @@ source /etc/profile
 cd /waka
 pacman -Sy
 pacman --noconfirm -S #KERNEL#
+pacman --noconfirm -S namcap
 tar xzfp #TARBALL#
 (makepkg -s 1>makepkg.log 2>&1)
+if [ $? -gt 0 ]; then
+	echo ">>>>>>>>>> Error building <<<<<<<<<<"
+	exit 1
+fi
+(echo ":::::::::: Filelist ::::::::::" 1>>makepkg.log 2>&1)
+(cat filelist 1>>makepkg.log 2>&1)
+(echo ":::::::::: Running namcap ::::::::::" 1>>makepkg.log 2>&1)
+(namcap PKGBUILD *.pkg.tar.gz 1>>makepkg.log 2>&1)

@@ -20,8 +20,8 @@
 from sqlobject import *
 import os, os.path
 
-user = 'jchu'
-password = 'a'
+user = ''
+password = ''
 url = 'http://localhost:8888'
 
 buildDir = '/mnt/temp/wakachroot'

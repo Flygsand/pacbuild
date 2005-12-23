@@ -76,8 +76,7 @@ fs_mount() {
 		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
 		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
 	msg "Mounting devfs..."
-		mount -t devfs  devfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
-		mount -t devpts devpts $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev/pts
+		mount -o bind   /dev  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
 }
 
 fs_umount() {
@@ -87,7 +86,6 @@ fs_umount() {
 		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
 		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
 	msg "Umounting devfs..."
-		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev/pts
 		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
 }
 

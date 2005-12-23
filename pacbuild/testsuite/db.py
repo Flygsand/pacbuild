@@ -5,7 +5,7 @@ import os
 import warnings
 import shutil
 
-from pacbuild.cherry import misc, package, repo, connect
+from pacbuild.apple import misc, package, connect
 from sqlobject import *
 from datetime import datetime
 
@@ -45,13 +45,9 @@ class DbTest(unittest.TestCase):
 
 	def testUser(self):
 		arch = misc.Arch(name='i586')
-		user = misc.User(name='jchu', password='a', email='jason@archlinux.org', arch=arch)
+		user = misc.User(name='jchu', password='a', email='jason@archlinux.org', arch=arch, type='builder')
 		newUser = misc.User.byName('jchu')
 		self.failUnless(user==newUser)
-
-	def testRepo(self):
-		r = repo.Repo(name='current', absdir='/something', repodir='/repo', updatescript='/script')
-		self.failUnless(repo.Repo.byName('current'))
 
 	# Include package tests
 

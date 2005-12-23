@@ -1,5 +1,5 @@
 # 
-# pacbuild - main module
+# pacbuild.apple.misc - Simple single class data types
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -18,4 +18,17 @@
 #
 # 
 
-__all__ = ['apple']
+from sqlobject import *
+
+class Arch(SQLObject):
+	name = StringCol(alternateID=True)
+	packageArchs = MultipleJoin('Package')
+	users = MultipleJoin('User')
+
+class User(SQLObject):
+	name = StringCol(alternateID=True)
+	password = StringCol()
+	email = StringCol()
+	arch = ForeignKey('Arch')
+	packages = MultipleJoin('Package')
+	type = EnumCol(enumValues=('builder', 'submitter'))

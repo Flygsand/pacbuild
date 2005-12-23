@@ -5,225 +5,111 @@ import os
 import warnings
 import shutil
 
-from pacbuild.cherry import repo, package, misc, connect
+from pacbuild.apple import package, misc, connect
 from sqlobject import *
 from datetime import datetime
 from datetime import timedelta
 
+conn = connectionForURI("sqlite:/:memory:")
+connect(conn)
 class PackageTest(unittest.TestCase):
 	def setUp(self):
-		warnings.filterwarnings("ignore", "tmpnam", RuntimeWarning, __name__)
-		self.tmpdir = os.tmpnam()
-		os.makedirs(self.tmpdir)
-		conn = connectionForURI("sqlite://%s/test.db"%self.tmpdir)
-		connect(conn)
-		self.repo = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
+#		warnings.filterwarnings("ignore", "tmpnam", RuntimeWarning, __name__)
+#		self.tmpdir = os.tmpnam()
+#		os.makedirs(self.tmpdir)
+		self.trans = conn.transaction()
+		connect(self.trans)
 		self.arch = misc.Arch(name='i586') 
-		self.user = misc.User(name='jchu', password='a', email='a', arch=self.arch)
-		shutil.copytree('pacbuild/testsuite/testAbs', '%s/abs'%self.tmpdir)
+		self.user = misc.User(name='jchu', password='a', email='a', arch=self.arch, type='builder')
+		self.submitter = misc.User(name='blah', password='a', email='a', arch=self.arch, type='submitter')
 
 	def tearDown(self):
-		shutil.rmtree(self.tmpdir)
-
-	def testCanQueue(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
-
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
-
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
-
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
-
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now())
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
-
-
-		self.failIf(glibcInstance1.canQueue())
-		self.failIf(glibcInstance2.canQueue())
-		self.failUnless(distccInstance.canQueue())
-		self.failIf(dbInstance1.canQueue())
-		self.failUnless(dbInstance2.canQueue())
-
-	def testQueue(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
-
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
-
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
-
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
-
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now())
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
-
-
-		glibcInstance2.queue()
-		self.failIf(glibcInstance2.status == 'queued')
-		distccInstance.queue()
-		self.failUnless(distccInstance.status == 'queued')
-		dbInstance1.queue()
-		self.failIf(dbInstance1.status == 'queued')
-		dbInstance2.queue()
-		self.failUnless(dbInstance2.status == 'queued')
-
-	def testCanFreshen(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
-
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
-
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
-
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
-
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now())
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
-
-
-		self.failIf(glibcInstance1.canFreshen())
-		oldPkg = glibcInstance2.canFreshen()
-		self.failUnless(oldPkg == glibcInstance1)
-		self.failIf(distccInstance.canFreshen())
-		self.failIf(dbInstance1.canFreshen())
-		self.failIf(dbInstance2.canFreshen())
-
-	def testFreshen(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
-
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
-
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
-
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
-
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now())
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
-
-
-		glibcInstance2.freshen()
-		self.failUnless(glibcInstance2.status == 'queued')
-		self.failUnless(glibcInstance1.status == 'freshened')
-		distccInstance.freshen()
-		self.failUnless(distccInstance.status == 'new')
-		dbInstance1.freshen()
-		self.failIf(dbInstance1.status == 'queued')
-		dbInstance2.freshen()
-		self.failIf(dbInstance2.status == 'queued')
-		self.failUnless(dbInstance1.status == 'build-error')
-
-	def testCanBuild(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
-
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
-
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
-
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
-
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now())
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
-
-
-		self.failUnless(glibcInstance1.canBuild())
-		self.failIf(glibcInstance2.canBuild())
-		self.failIf(distccInstance.canBuild())
-		self.failIf(dbInstance1.canBuild())
-		self.failIf(dbInstance2.canBuild())
+		self.trans.rollback()
+		connect(conn)
+#		shutil.rmtree(self.tmpdir)
 
 	def testBuild(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
+		glibc1 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), priority=1)
+		glibc2 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='3', status='building', timestamp=datetime.now(), priority=1, user=self.user)
+		distcc1 = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='done', timestamp=datetime.now(), priority=1)
+		db1 = package.Package(name='db', arch=self.arch, pkgver='4.3.28', pkgrel='1', status='cancelled', timestamp=datetime.now(), priority=1)
 
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
+		glibc1.build(self.user)
+		glibc2.build(self.user)
+		distcc1.build(self.user)
+		db1.build(self.user)
 
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
+		self.failIf(glibc1.status != 'building')
+		self.failIf(glibc2.status != 'building')
+		self.failIf(distcc1.status != 'done')
+		self.failIf(db1.status != 'cancelled')
 
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
+	def testFinish(self):
+		glibc1 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), priority=1)
+		glibc2 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='3', status='building', timestamp=datetime.now(), priority=1, user=self.user)
+		distcc1 = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='done', timestamp=datetime.now(), priority=1)
+		db1 = package.Package(name='db', arch=self.arch, pkgver='4.3.28', pkgrel='1', status='cancelled', timestamp=datetime.now(), priority=1)
 
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='build-error', timestamp=datetime.now())
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
+		glibc1.finish('', '')
+		glibc2.finish('', '')
+		distcc1.finish('', '')
+		db1.finish('', '')
 
+		self.failIf(glibc1.status != 'queued')
+		self.failIf(glibc2.status != 'done')
+		self.failIf(distcc1.status != 'done')
+		self.failIf(db1.status != 'cancelled')
 
-		glibcInstance1.build()
-		self.failUnless(glibcInstance1.status == 'building')
-		distccInstance.build()
-		self.failUnless(distccInstance.status == 'new')
-		dbInstance1.build()
-		self.failUnless(dbInstance1.status == 'build-error')
-		dbInstance2.build()
-		self.failUnless(dbInstance2.status == 'new')
+	def testCancel(self):
+		glibc1 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), priority=1)
+		glibc2 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='3', status='building', timestamp=datetime.now(), priority=1, user=self.user)
+		distcc1 = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='done', timestamp=datetime.now(), priority=1)
+		db1 = package.Package(name='db', arch=self.arch, pkgver='4.3.28', pkgrel='1', status='cancelled', timestamp=datetime.now(), priority=1)
 
-	def testIsStale(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		distcc = package.Package(name="distcc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
+		glibc1.cancel()
+		glibc2.cancel()
+		distcc1.cancel()
+		db1.cancel()
 
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		distccArch = package.PackageArch(applies=1, arch=self.arch, package=distcc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
+		self.failIf(glibc1.status != 'cancelled')
+		self.failIf(glibc2.status != 'cancelled')
+		self.failIf(distcc1.status != 'cancelled')
+		self.failIf(db1.status != 'cancelled')
 
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='building', timestamp=datetime.now())
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
+	def testUnbuild(self):
+		glibc1 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), priority=1)
+		glibc2 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='3', status='building', timestamp=datetime.now(), priority=1, user=self.user)
+		distcc1 = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='done', timestamp=datetime.now(), priority=1)
+		db1 = package.Package(name='db', arch=self.arch, pkgver='4.3.28', pkgrel='1', status='cancelled', timestamp=datetime.now(), priority=1)
 
-		distccInstance = package.PackageInstance(packageArch=distccArch, pkgver='2.18.3', pkgrel='1', status='new', timestamp=datetime.now())
+		glibc1.unbuild()
+		glibc2.unbuild()
+		distcc1.unbuild()
+		db1.unbuild()
 
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='building', timestamp=datetime.now())
+		self.failIf(glibc1.status != 'queued')
+		self.failIf(glibc2.status != 'queued')
+		self.failIf(glibc2.user != None)
+		self.failIf(distcc1.status != 'done')
+		self.failIf(db1.status != 'cancelled')
 
-		self.failUnless(glibcInstance1.isStale(timedelta(seconds=0)))
-		self.failIf(glibcInstance2.isStale(timedelta(seconds=0)))
-		self.failIf(distccInstance.isStale(timedelta(seconds=0)))
-		self.failIf(dbInstance1.isStale(timedelta(days=2)))
+	def testGetNextBuild(self):
+		glibc1 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), priority=1)
+		glibc2 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='3', status='building', timestamp=datetime.now(), priority=1, user=self.user)
+		distcc1 = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='done', timestamp=datetime.now(), priority=1)
+		db1 = package.Package(name='db', arch=self.arch, pkgver='4.3.28', pkgrel='1', status='cancelled', timestamp=datetime.now(), priority=1)
 
-	def testUnBuild(self):
-		glibc = package.Package(name="glibc", repo=self.repo)
-		db = package.Package(name='db', repo=self.repo)
+		self.failIf(package.getNextBuild(self.arch) != glibc1)
 
-		glibcArch = package.PackageArch(applies=1, arch=self.arch, package=glibc)
-		dbArch = package.PackageArch(applies=1, arch=self.arch, package=db)
+		glibc2.unbuild()
+		self.failIf(package.getNextBuild(self.arch) != glibc1)
 
-		glibcInstance1 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='2', status='building', timestamp=datetime.now(), user=self.user)
-		glibcInstance2 = package.PackageInstance(packageArch=glibcArch, pkgver='2.3.4', pkgrel='3', status='new', timestamp=datetime.now())
-
-		dbInstance1 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.28', pkgrel='1', status='building', timestamp=datetime.now(), user=self.user)
-		dbInstance2 = package.PackageInstance(packageArch=dbArch, pkgver='4.3.27', pkgrel='1', status='new', timestamp=datetime.now())
-
-		glibcInstance1.unbuild()
-		self.failUnless(glibcInstance1.status == 'queued')
-		self.failUnless(glibcInstance1.user == None)
-		glibcInstance2.unbuild()
-		self.failUnless(glibcInstance2.status == 'new')
-		dbInstance1.unbuild()
-		self.failUnless(dbInstance1.status == 'queued')
-		dbInstance2.unbuild()
-		self.failUnless(dbInstance2.status == 'new')
+		glibc1.priority = 2
+		glibc2.priority = 2
+		distcc1.status = 'queued'
+		db1.status = 'queued'
+		db1.priority = 2
+		self.failIf(package.getNextBuild(self.arch) == distcc1)
 
 if __name__ == "__main__":
 	unittest.main()

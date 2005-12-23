@@ -1,5 +1,5 @@
 # 
-# pacbuild - main module
+# pacbuild - cherry module
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -18,4 +18,26 @@
 #
 # 
 
-__all__ = ['apple']
+__all__ = ['misc','package','rpc']
+
+import misc, package
+from sqlobject import *
+
+def connect(conn):
+	misc.Arch.setConnection(conn)
+	misc.Arch.createTable(ifNotExists=True)
+	misc.User.setConnection(conn)
+	misc.User.createTable(ifNotExists=True)
+
+	package.Package.setConnection(conn)
+	package.Package.createTable(ifNotExists=True)
+
+def authUser(name, password):
+	try:
+		user = misc.User.byName(name)
+		if user.password == password:
+			return user
+		else:
+			return False
+	except main.SQLObjectNotFound:
+		return False

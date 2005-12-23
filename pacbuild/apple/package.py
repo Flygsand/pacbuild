@@ -37,7 +37,7 @@ class Package(SQLObject):
 	user = ForeignKey('User', default=None)
 
 	def _set_binary(self, value):
-		if value is not None:
+		if value is not None and value != False:
 			self._SO_set_binary(value.encode('base64').replace('\n',''))
 		else:
 			self._SO_set_binary(None)

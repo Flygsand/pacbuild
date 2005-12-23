@@ -83,7 +83,7 @@ class Waka(threading.Thread):
 		if os.path.isfile(self.binaryPkg):
 			binary = open(self.binaryPkg).read()
 		else:
-			binary = None
+			binary = False
 		log = open(self.logFile).read()
 		sendBuild(self.build, binary, log)
 
@@ -99,10 +99,10 @@ def getNextBuild():
 
 def sendBuild(build, binary, log):
 	server = xmlrpclib.ServerProxy(strawberryConfig.url)
-	if binary is not None:
+	if binary is not False:
 		bin64 = binary.encode('base64')
 	else:
-		bin64 = None
+		bin64 = False
 	server.submitBuild(strawberryConfig.user, strawberryConfig.password, build.cherryId, bin64, log.encode('base64'))
 
 def _main(argv=None):
@@ -123,7 +123,7 @@ def _main(argv=None):
 	while True:
 		if canBuild():
 			build = getNextBuild()
-			if build is not None:
+			if build is not None and build is not False:
 				print "Got a new build: %s" % build.sourceFilename
 				
 				# This is where you'd set up waka

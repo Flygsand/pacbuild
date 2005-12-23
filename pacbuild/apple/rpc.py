@@ -54,8 +54,10 @@ class RPCDaemon:
 			return False
 		if build.status != 'building':
 			return False
-		if data is not None:
+		if data is not None and data != False:
 			data = data.decode('base64')
+		elif data == False:
+			data = None
 		log = log.decode('base64')
 
 		build.finish(data, log)

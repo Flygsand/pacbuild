@@ -33,3 +33,5 @@ myHome = os.path.expanduser("~")
 if not os.path.isdir("%s/.pacbuild"%myHome):
 	os.makedirs("%s/.pacbuild"%myHome)
 database = connectionForURI("sqlite://%s/.pacbuild/strawberry.db"%myHome)
+
+sleeptime = 600

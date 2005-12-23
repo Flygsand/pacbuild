@@ -135,7 +135,7 @@ def _main(argv=None):
 				print "Cleaning up from thread"
 				Build.delete(waka.build.id)
 				del threads[i]
-		time.sleep(10)
+		time.sleep(strawberryConfig.sleeptime)
 			
 
 if __name__ == "__main__":

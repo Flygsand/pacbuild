@@ -81,7 +81,15 @@ class Package(SQLObject):
 			self.user = None
 			self.timestamp = datetime.now()
 
+	def isStale(self, delta):
+		if self.status == 'building' and datetime.now()-self.timestamp >= delta:
+			return True
+		return False
+
 def getNextBuild(arch):
 	results = Package.select(AND(Package.q.archID==arch.id, Package.q.status=='queued'), orderBy='priority', reversed=True)
 	if results.count() > 0:
 		return results[0]
+
+def getBuilds():
+	return Package.select(Package.q.status=='building')

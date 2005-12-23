@@ -111,5 +111,17 @@ class PackageTest(unittest.TestCase):
 		db1.priority = 2
 		self.failIf(package.getNextBuild(self.arch) == distcc1)
 
+	def testIsStale(self):
+		glibc1 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='building', timestamp=datetime.now(), priority=1)
+		glibc2 = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), priority=1)
+
+		delta = timedelta(seconds=-1)
+		self.failUnless(glibc1.isStale(delta))
+		self.failIf(glibc2.isStale(delta))
+		delta = timedelta(days=2)
+		self.failIf(glibc1.isStale(delta))
+		self.failIf(glibc2.isStale(delta))
+		
+
 if __name__ == "__main__":
 	unittest.main()

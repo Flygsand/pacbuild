@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-# 
-# apple - Build distribution daemon
+# appleConfig - Config file for apple daemon
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -18,28 +16,13 @@
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 # 
 
-import sys
-import appleConfig
-from pacbuild.apple import connect, rpc, package
+from sqlobject import *
+import os, os.path
+import datetime
 
-def _main(argv=None):
-	if argv is None:
-		argv = sys.argv
+myHome = os.path.expanduser("~")
+if not os.path.isdir("%s/.pacbuild"%myHome):
+	os.makedirs("%s/.pacbuild"%myHome)
+database = connectionForURI("sqlite://%s/.pacbuild/apple.db"%myHome)
 
-	connect(appleConfig.database)
-
-	rpc.init()
-
-	try:
-		while True:
-			for i in package.getBuilds():
-				if i.isStale(appleConfig.stalePackageTimeout):
-					i.unbuild()
-			rpc.process()
-	except KeyboardInterrupt:
-		pass
-
-	return 0
-
-if __name__ == "__main__":
-	sys.exit(_main())
+stalePackageTimeout = datetime.timedelta(days=2)

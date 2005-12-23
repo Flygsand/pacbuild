@@ -40,7 +40,7 @@ class RpcServerTest(unittest.TestCase):
 		self.failUnless(db2.status == 'building')
 
 		nextBuild = daemon.getNextBuild('jchu', 'a')
-		self.failUnless(nextBuild == None)
+		self.failUnless(nextBuild == False)
 
 	def testSubmitBuild(self):
 		glibc = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), source='', priority=1)

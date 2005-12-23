@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # 
-# apple - Build distribution daemon
+# updatePkgbuild - Temporary script to upload PKBUILD to an apple instance
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -19,27 +19,32 @@
 # 
 
 import sys
-import appleConfig
-from pacbuild.apple import connect, rpc, package
+import xmlrpclib
+import threading
+import os, os.path
+import re
+import time
+
+from sqlobject import *
 
 def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	connect(appleConfig.database)
+	if len(argv) != 5:
+		print "usage: %s <server> <user> <password> <id>" % argv[0]
+		return 1
 
-	rpc.init()
-
-	try:
-		while True:
-			for i in package.getBuilds():
-				if i.isStale(appleConfig.stalePackageTimeout):
-					i.unbuild()
-			rpc.process()
-	except KeyboardInterrupt:
-		pass
-
-	return 0
+	server = xmlrpclib.ServerProxy(argv[1])
+	res = server.getPackage(argv[2], argv[3], int(argv[4]))
+	
+	if res != False:
+		binary = open(res[0], "wb")
+		binary.write(res[1].decode('base64'))
+		log = open("%s.log" %res[0], "wb")
+		log.write(res[2].decode('base64'))
+	else:
+		print "Auth error"
 
 if __name__ == "__main__":
 	sys.exit(_main())

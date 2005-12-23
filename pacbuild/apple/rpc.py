@@ -38,7 +38,7 @@ class RPCDaemon:
 			return False
 		nextBuild = package.getNextBuild(user.arch)
 		if nextBuild == None:
-			return None
+			return False
 		nextBuild.build(user)
 		return (nextBuild.id, '%s-%s-%s.src.tar.gz'%(nextBuild.name, nextBuild.pkgver, nextBuild.pkgrel), nextBuild.source.encode('base64'))
 
@@ -67,6 +67,21 @@ class RPCDaemon:
 			return False
 		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=user.arch, priority=priority, source=source.decode('base64'))
 		return build.id
+
+	def getPackage(self, user, password, id):
+		user = authUser(user, password)
+		if not user or user.type != 'submitter':
+			return False
+		build = package.Package.get(id)
+		if build.binary != None:
+			binary = build.binary.encode('base64')
+		else:
+			binary = ''
+		if build.log != None:
+			log = build.log.encode('base64')
+		else:
+			log = ''
+		return ("%s-%s-%s.pkg.tar.gz" % (build.name, build.pkgver, build.pkgrel), binary, log)
 
 class ThreadedXMLRPC(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
 	pass

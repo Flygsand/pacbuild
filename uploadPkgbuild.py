@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # 
-# apple - Build distribution daemon
+# updatePkgbuild - Temporary script to upload PKBUILD to an apple instance
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -19,27 +19,27 @@
 # 
 
 import sys
-import appleConfig
-from pacbuild.apple import connect, rpc, package
+import xmlrpclib
+import threading
+import os, os.path
+import re
+import time
+
+from sqlobject import *
 
 def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	connect(appleConfig.database)
+	if len(argv) != 9:
+		print "usage: %s <server> <user> <password> <priority> <name> <pkgver> <pkgrel> <source>" % argv[0]
+		return 1
 
-	rpc.init()
+	binary = open(argv[8], "rb")
+	bin = binary.read().encode('base64')
 
-	try:
-		while True:
-			for i in package.getBuilds():
-				if i.isStale(appleConfig.stalePackageTimeout):
-					i.unbuild()
-			rpc.process()
-	except KeyboardInterrupt:
-		pass
-
-	return 0
+	server = xmlrpclib.ServerProxy(argv[1])
+	print server.submitPKGBUILD(argv[2], argv[3], argv[5], argv[6], argv[7], int(argv[4]), bin)
 
 if __name__ == "__main__":
 	sys.exit(_main())

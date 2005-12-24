@@ -21,7 +21,6 @@ for i in *; do
 	if [ "$i" != "CVS" -a "$i" != "PKGBUILD" ]; then
 		in_source $i
 		if [ $? -eq 0 ]; then
-			echo "adding $i"
 			files="$files $i"
 		fi
 	fi

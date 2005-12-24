@@ -42,6 +42,24 @@ class RpcServerTest(unittest.TestCase):
 		nextBuild = daemon.getNextBuild('jchu', 'a')
 		self.failUnless(nextBuild == False)
 
+	def testGetNextBuildSubmitter(self):
+		glibc = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), source='', priority=1)
+		distcc = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='building', timestamp=datetime.now(), source='', priority=1)
+		db1 = package.Package(name='db', arch=self.arch, pkgver='4.3.28', pkgrel='1', status='cancelled', timestamp=datetime.now(), source='', priority=1)
+		db2 = package.Package(name='db', arch=self.arch, pkgver='4.3.27', pkgrel='1', status='queued', timestamp=datetime.now(), source='', priority=1)
+
+		daemon = rpc.RPCDaemon()
+		nextBuild = daemon.getNextBuild('jchu2', 'a')
+		self.failUnless(nextBuild[0] == glibc.id)
+		self.failUnless(glibc.status == 'building')
+
+		nextBuild = daemon.getNextBuild('jchu2', 'a')
+		self.failUnless(nextBuild[0] == db2.id)
+		self.failUnless(db2.status == 'building')
+
+		nextBuild = daemon.getNextBuild('jchu2', 'a')
+		self.failUnless(nextBuild == False)
+
 	def testSubmitBuild(self):
 		glibc = package.Package(name="glibc", arch=self.arch, pkgver='2.3.4', pkgrel='2', status='queued', timestamp=datetime.now(), source='', priority=1)
 		distcc = package.Package(name="distcc", arch=self.arch, pkgver='2.18.3', pkgrel='1', status='building', timestamp=datetime.now(), source='', priority=1)

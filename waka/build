@@ -5,7 +5,7 @@ pacman --noconfirm -Sy #KERNEL# namcap
 tar xzfp #TARBALL#
 (makepkg -s 1>makepkg.log 2>&1)
 if [ $? -gt 0 ]; then
-	echo ">>>>>>>>>> Error building <<<<<<<<<<"
+	(echo ">>>>>>>>>> Error building <<<<<<<<<<" 1>>makepkg.log 2>&1)
 	exit 1
 fi
 (echo ":::::::::: Filelist ::::::::::" 1>>makepkg.log 2>&1)

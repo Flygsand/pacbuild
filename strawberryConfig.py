@@ -28,10 +28,10 @@ buildDir = '/mnt/temp/wakachroot'
 
 maxBuilds = 1
 
-myHome = os.path.expanduser("~")
+DBdir = '/var/lib/pacbuild'
 
-if not os.path.isdir("%s/.pacbuild"%myHome):
-	os.makedirs("%s/.pacbuild"%myHome)
-database = connectionForURI("sqlite://%s/.pacbuild/strawberry.db"%myHome)
+if not os.path.isdir(DBdir):
+	os.makedirs(DBdir)
+database = connectionForURI("sqlite://%s/strawberry.db"%DBdir)
 
 sleeptime = 600

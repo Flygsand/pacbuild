@@ -19,6 +19,7 @@
 # 
 
 import sys
+sys.path.append('/etc')
 import xmlrpclib
 import threading
 import os, os.path

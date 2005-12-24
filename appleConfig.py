@@ -20,9 +20,9 @@ from sqlobject import *
 import os, os.path
 import datetime
 
-myHome = os.path.expanduser("~")
-if not os.path.isdir("%s/.pacbuild"%myHome):
-	os.makedirs("%s/.pacbuild"%myHome)
-database = connectionForURI("sqlite://%s/.pacbuild/apple.db"%myHome)
+DBdir = '/var/lib/pacbuild'
+if not os.path.isdir(DBdir):
+	os.makedirs(DBdir)
+database = connectionForURI("sqlite://%s/apple.db"%DBdir)
 
 stalePackageTimeout = datetime.timedelta(days=2)

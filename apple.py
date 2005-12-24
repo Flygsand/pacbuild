@@ -19,6 +19,7 @@
 # 
 
 import sys
+sys.path.append('/etc')
 import appleConfig
 from pacbuild.apple import connect, rpc, package
 

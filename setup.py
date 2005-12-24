@@ -9,5 +9,5 @@ setup(name="pacbuild",
       author="Jason Chu",
       author_email="jason@archlinux.org",
       packages=["pacbuild", "pacbuild/apple"],
-      scripts=["apple.py", "strawberry.py", "waka/mkchroot", "getBuild.py", "queuepackage.sh", "uploadPkgbuild.py", "apple", "strawberry"],
+      scripts=["apple.py", "strawberry.py", "waka/mkchroot", "getBuild.py", "queuepackage.sh", "uploadPkgbuild.py"],
       data_files=DATAFILES)

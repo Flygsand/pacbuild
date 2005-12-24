@@ -29,3 +29,4 @@ done
 
 tar czf $pkgname-$pkgver-$pkgrel.src.tar.gz $files
 uploadPkgbuild.py $1 $2 $3 $4 $pkgname $pkgver $pkgrel $pkgname-$pkgver-$pkgrel.src.tar.gz
+rm $pkgname-$pkgver-$pkgrel.src.tar.gz

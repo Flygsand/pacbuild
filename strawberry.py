@@ -25,6 +25,7 @@ import threading
 import os, os.path
 import re
 import time
+import shutil
 
 from sqlobject import *
 
@@ -87,6 +88,7 @@ class Waka(threading.Thread):
 			binary = False
 		log = open(self.logFile).read()
 		sendBuild(self.build, binary, log)
+		shutil.rmtree(self.buildDir)
 
 def canBuild():
 	return Build.select().count() < strawberryConfig.maxBuilds

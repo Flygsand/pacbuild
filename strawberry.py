@@ -130,12 +130,13 @@ def _main(argv=None):
 				waka = Waka(build, os.path.join(strawberryConfig.buildDir, build.sourceFilename))
 				waka.start()
 				threads.append(waka)
+		else:
+			time.sleep(strawberryConfig.sleeptime)
 		for i, v in enumerate(threads):
 			if not v.isAlive():
 				print "Cleaning up from thread"
 				Build.delete(waka.build.id)
 				del threads[i]
-		time.sleep(strawberryConfig.sleeptime)
 			
 
 if __name__ == "__main__":

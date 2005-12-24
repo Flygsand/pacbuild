@@ -59,7 +59,7 @@ class Package(SQLObject):
 			return self._SO_get_source().decode('base64')
 
 	def build(self, user):
-		if self.status == 'queued' and user.type == 'builder':
+		if self.status == 'queued':
 			self.status = 'building'
 			self.user = user
 			self.timestamp = datetime.now()

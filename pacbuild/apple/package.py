@@ -25,7 +25,7 @@ class Package(SQLObject):
 	name = StringCol()
 	pkgver = StringCol()
 	pkgrel = StringCol()
-	status = EnumCol(enumValues=('queued', 'building', 'done', 'cancelled'))
+	status = EnumCol(enumValues=('queued', 'building', 'done', 'error', 'cancelled'))
 	timestamp = DateTimeCol()
 	arch = ForeignKey('Arch')
 	# 1 is the lowest priority -- I can see always wanting to bump things up, but less wanting to always have things behind other things
@@ -66,10 +66,13 @@ class Package(SQLObject):
 
 	def finish(self, binary, log):
 		if self.status == 'building':
-			self.status = 'done'
 			self.binary = binary
 			self.log = log
 			self.timestamp = datetime.now()
+			if self.hasLogError():
+				self.status = 'error'
+			else:
+				self.status = 'done'
 
 	def cancel(self):
 		self.status = 'cancelled'
@@ -84,6 +87,15 @@ class Package(SQLObject):
 	def isStale(self, delta):
 		if self.status == 'building' and datetime.now()-self.timestamp >= delta:
 			return True
+		return False
+
+	def hasLogError(self, log=None):
+		if log is None:
+			log = self.log
+		if log is not None:
+			logstring = ''.join(self.log)
+			if ">>>>>>>>>> Error building <<<<<<<<<<" in logstring:
+				return True
 		return False
 
 def getNextBuild(arch):

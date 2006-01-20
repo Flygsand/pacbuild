@@ -52,14 +52,14 @@ def job_list():
 
 def colorize(st):
 	s = st[:]
-	subs = [('\[1;32m', "<font color='green'>"), ('\[1;0m', "</font>"), ('\[1;1m', "<font style='font-weight: bold;'>"), ('\[1;33m', "<font color='darkyellow'>"), ('\n', "<br>")]
+	subs = [('\[1;32m', "<font color='green'>"), ('\[1;0m', "</font>"), ('\[1;1m', "<font style='font-weight: bold;'>"), ('\[1;33m', "<font color='darkyellow'>"), ("\[1;31m", "<font color='red'>")]
 	for i, j in subs:
 		s = re.sub(i, j, s)
 	return s
 
 def pkg_colorlog(id=0):
 	print "Content-type: text/html\n"
-	print "<font face='bitstream vera sans mono'>" + colorize(package.Package.get(id).log) + "</font>"
+	print "<pre>" + colorize(package.Package.get(id).log) + "</pre>"
 
 def pkg_log(id=0):
 	print "Content-type: text/plain\n"

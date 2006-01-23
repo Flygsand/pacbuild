@@ -1,6 +1,7 @@
 #!/bin/bash
 source /etc/profile
 cd /waka
+pacman --noconfirm -Syu
 pacman --noconfirm -Sy #KERNEL# namcap
 tar xzfp #TARBALL#
 (makepkg -s 1>makepkg.log 2>&1)

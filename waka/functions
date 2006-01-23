@@ -51,6 +51,7 @@ usage() {
 	msg  "  -w <destdir>     Write package to <destdir> instead of the working dir"
 	msg  "  -l <destdir>     Write build log to <destdir> instead of the working dir"
 	msg  "  -o <configfile>  Use an alternate config file"
+	msg  "  -p <pacmanconfigfile>  Use an alternate pacman config file"
 }
 
 
@@ -76,7 +77,7 @@ fs_mount() {
 		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
 		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
 	msg "Mounting devfs..."
-		mount -o bind   /dev  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
+		mount -o bind,ro   /dev  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
 }
 
 fs_umount() {
@@ -114,9 +115,13 @@ quickinst() {
 conf_update() {
 	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc
 
-	echo "[current]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
-	echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+	if [ "$PACMANFILE" = "" ]; then
+		echo "[current]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+		echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
 
-	echo "[extra]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
-	echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+		echo "[extra]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+		echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+	else
+		cp $PACMANFILE $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.conf
+	fi
 }

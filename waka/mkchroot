@@ -12,8 +12,9 @@ TARBALL=""
 PKGDEST=""
 LOGDEST=""
 CONFIGFILE="/etc/mkchroot.conf"
+PACMANFILE=""
 
-while [ "$#" -ne "0" ]; do
+while [ $# -ne 0 ]; do
 	case $1 in
 		--help)
 			usage
@@ -24,7 +25,8 @@ while [ "$#" -ne "0" ]; do
 			exit 1
 			;;
 		-*)
-			while getopts "ht:w:l:o:" opt; do
+			OPTIND=0
+			while getopts "hw:l:p:o:" opt; do
 				case $opt in
 					h)
 						usage
@@ -36,6 +38,10 @@ while [ "$#" -ne "0" ]; do
 						;;
 					l)
 						LOGDEST=$OPTARG
+						shift
+						;;
+					p)
+						PACMANFILE=$OPTARG
 						shift
 						;;
 					o)

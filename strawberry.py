@@ -66,6 +66,7 @@ class Waka(threading.Thread):
 		if (not os.path.isdir(self.buildDir)):
 			os.makedirs(self.buildDir)
 		self.mkchrootPath = os.path.join(self.buildDir,"mkchroot.conf")
+		self.pacmanconfPath = os.path.join(self.buildDir,"pacman.conf")
 		conf = open(self.mkchrootPath, "w")
 		conf.write('WAKA_ROOT_DIR="%s"\n'%self.buildDir)
 		conf.write('WAKA_CHROOT_DIR="chroot/"\n')
@@ -75,9 +76,12 @@ class Waka(threading.Thread):
 		conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
 		conf.write('DEFAULT_KERNEL=kernel26\n')
 		conf.close()
+		pacmanconf = open(self.pacmanconfPath, "w")
+		pacmanconf.write(strawberryConfig.pacmanConf)
+		pacmanconf.close()
 
 	def run(self):
-		os.system("/usr/bin/mkchroot -o %s %s"%(self.mkchrootPath, self.sourcePkg))
+		os.system("/usr/bin/mkchroot -p %s -o %s %s"%(self.pacmanconfPath, self.mkchrootPath, self.sourcePkg))
 		# Do the post build stuff
 		self.binaryPkg = re.sub('\.src\.tar\.gz$', '.pkg.tar.gz', self.sourcePkg)
 		self.logFile = re.sub('\.src\.tar\.gz$', '.makepkg.log', self.sourcePkg)

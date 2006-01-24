@@ -37,13 +37,13 @@ def job_list():
 <body>
 <table cellpadding='5px'>
 <tr>
-	<th>Package</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
+	<th>Package</th><th>Arch</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
 </tr>
 '''
 	
 	for i in package.Package.select():
 		print "<tr>"
-		print "<td>%s-%s-%s</td><td>%s</td>"%(i.name,i.pkgver,i.pkgrel,i.status)
+		print "<td>%s-%s-%s</td><td>%s</td><td>%s</td>"%(i.name,i.pkgver,i.pkgrel,i.arch.name,i.status)
 		print "<td><a href='?action=log&id=%s'>Log</a></td>"%(i.id)
 		print "<td><a href='?action=colorlog&id=%s'>Colorized Log</a></td>"%(i.id)
 		print "<td><a href='?action=pkg&id=%s'>%s-%s-%s.pkg.tar.gz</a></td>"%(i.id,i.name,i.pkgver,i.pkgrel)

@@ -13,6 +13,21 @@ in_source() {
 	return 1
 }
 
+usage() {
+	echo "$0 <url> <account> <password> <priority>"
+	exit 1
+}
+
+if [ "$1" = "" -o "$2" = "" -o "$3" = "" -o "$4" = "" ]; then
+	usage
+fi
+
+if [ ! -f PKGBUILD ]; then
+	echo "Please execute $0 in the package's directory"
+	echo "Missing PKGBUILD"
+	exit 1
+fi
+
 source PKGBUILD
 
 files="PKGBUILD"

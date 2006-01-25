@@ -19,17 +19,21 @@
 # 
 
 import sys
-sys.path.append('/etc')
+#sys.path.append('/etc')
 import xmlrpclib
 import threading
 import os, os.path
 import re
 import time
 import shutil
+import getopt
 
 from sqlobject import *
 
-import strawberryConfig
+defaultConfig = "/etc/strawberryConfig.py"
+
+#import strawberryConfig
+strawberryConfig = {}
 
 class Build(SQLObject):
 	cherryId = IntCol()
@@ -77,7 +81,7 @@ class Waka(threading.Thread):
 		conf.write('DEFAULT_KERNEL=kernel26\n')
 		conf.close()
 		pacmanconf = open(self.pacmanconfPath, "w")
-		pacmanconf.write(strawberryConfig.pacmanConf)
+		pacmanconf.write(strawberryConfig['pacmanConf'])
 		pacmanconf.close()
 
 	def run(self):
@@ -95,35 +99,53 @@ class Waka(threading.Thread):
 		shutil.rmtree(self.buildDir)
 
 def canBuild():
-	return Build.select().count() < strawberryConfig.maxBuilds
+	return Build.select().count() < strawberryConfig['maxBuilds']
 
 def getNextBuild():
-	server = xmlrpclib.ServerProxy(strawberryConfig.url)
-	build = server.getNextBuild(strawberryConfig.user, strawberryConfig.password)
+	server = xmlrpclib.ServerProxy(strawberryConfig['url'])
+	build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'])
 	if build is not None and build is not False:
 		return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
 	return None
 
 def sendBuild(build, binary, log):
-	server = xmlrpclib.ServerProxy(strawberryConfig.url)
+	server = xmlrpclib.ServerProxy(strawberryConfig['url'])
 	if binary is not False:
 		bin64 = binary.encode('base64')
 	else:
 		bin64 = False
-	server.submitBuild(strawberryConfig.user, strawberryConfig.password, build.cherryId, bin64, log.encode('base64'))
+	server.submitBuild(strawberryConfig['user'], strawberryConfig['password'], build.cherryId, bin64, log.encode('base64'))
+
+def usage():
+	print "usage: strawberry.py [-c <config>]"
+	print "       -c <config>     : use a different config than the default (%s)" % defaultConfig
+	sys.exit(2)
 
 def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	Build.setConnection(strawberryConfig.database)
+	try:
+		optlist, args = getopt.getopt(argv[1:], "c:")
+	except getopt.GetoptError:
+		usage()
+
+	configPath = defaultConfig
+	for i, k in optlist:
+		if i == '-c':
+			if os.path.isfile(k):
+				configPath = k
+
+	execfile(configPath, strawberryConfig, strawberryConfig)
+
+	Build.setConnection(strawberryConfig['database'])
 	Build.createTable(ifNotExists=True)
 
 	threads = []
 
 	# Start any builds that never actually finished last time
 	for i in Build.select():
-		waka = Waka(i, os.path.join(strawberryConfig.buildDir, i.sourceFilename))
+		waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename))
 		waka.start()
 		threads.append(waka)
 
@@ -134,7 +156,7 @@ def _main(argv=None):
 				print "Got a new build: %s" % build.sourceFilename
 				
 				# This is where you'd set up waka
-				waka = Waka(build, os.path.join(strawberryConfig.buildDir, build.sourceFilename))
+				waka = Waka(build, os.path.join(strawberryConfig['buildDir'], build.sourceFilename))
 				waka.start()
 				threads.append(waka)
 		for i, v in enumerate(threads):
@@ -142,7 +164,7 @@ def _main(argv=None):
 				print "Cleaning up from thread"
 				Build.delete(waka.build.id)
 				del threads[i]
-		time.sleep(strawberryConfig.sleeptime)
+		time.sleep(strawberryConfig['sleeptime'])
 			
 
 if __name__ == "__main__":

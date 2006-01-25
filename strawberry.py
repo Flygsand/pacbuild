@@ -146,9 +146,10 @@ def _main(argv=None):
 
 	# Start any builds that never actually finished last time
 	for i in Build.select():
-		waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename))
-		waka.start()
-		threads.append(waka)
+		if not os.path.isdir(os.path.join(strawberryConfig['buildDir'], i.sourceFilename)):
+			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename))
+			waka.start()
+			threads.append(waka)
 
 	while True:
 		if canBuild():

@@ -80,9 +80,10 @@ class Waka(threading.Thread):
 		conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
 		conf.write('DEFAULT_KERNEL=kernel26\n')
 		conf.close()
-		pacmanconf = open(self.pacmanconfPath, "w")
-		pacmanconf.write(strawberryConfig['pacmanConf'])
-		pacmanconf.close()
+		if strawberryConfig.has_key('pacmanConf'):
+			pacmanconf = open(self.pacmanconfPath, "w")
+			pacmanconf.write(strawberryConfig['pacmanConf'])
+			pacmanconf.close()
 
 	def run(self):
 		os.system("/usr/bin/mkchroot -p %s -o %s %s"%(self.pacmanconfPath, self.mkchrootPath, self.sourcePkg))

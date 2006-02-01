@@ -52,6 +52,9 @@ usage() {
 	msg  "  -l <destdir>     Write build log to <destdir> instead of the working dir"
 	msg  "  -o <configfile>  Use an alternate config file"
 	msg  "  -p <pacmanconfigfile>  Use an alternate pacman config file"
+	msg  "  -c <imgfile>  Create an image to use in subsequent builds"
+	msg  "  -i <imgfile>  Use image as build base"
+
 }
 
 
@@ -93,7 +96,8 @@ fs_umount() {
 fs_bind() {
 	msg "Using global package cache..."
 		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
-		mount --bind /var/cache/pacman/pkg/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
+#		mount --bind /var/cache/pacman/pkg/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
+		cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
 #	msg "Using global source cache..."
 #		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
 #		mount --bind /var/cache/pacman/src/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src/
@@ -101,7 +105,9 @@ fs_bind() {
 
 fs_unbind() {
 #	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
-	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
+#	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
+	rsync -a $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
+	rm $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/*
 }
 
 quickinst() {

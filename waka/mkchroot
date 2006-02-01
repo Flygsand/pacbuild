@@ -13,6 +13,8 @@ PKGDEST=""
 LOGDEST=""
 CONFIGFILE="/etc/mkchroot.conf"
 PACMANFILE=""
+CREATEIMG=""
+USEIMG=""
 
 while [ $# -ne 0 ]; do
 	case $1 in
@@ -26,7 +28,7 @@ while [ $# -ne 0 ]; do
 			;;
 		-*)
 			OPTIND=0
-			while getopts "hw:l:p:o:" opt; do
+			while getopts "hw:l:p:o:c:i:" opt; do
 				case $opt in
 					h)
 						usage
@@ -46,6 +48,14 @@ while [ $# -ne 0 ]; do
 						;;
 					o)
 						CONFIGFILE=$OPTARG
+						shift
+						;;
+					c)
+						CREATEIMG=$OPTARG
+						shift
+						;;
+					i)
+						USEIMG=$OPTARG
 						shift
 						;;
 					*)
@@ -75,7 +85,13 @@ source $CONFIGFILE
 # now get some function library of ours up
 source /usr/share/waka/functions
 
-if [ "$TARBALL" = "" -o ! -f "$TARBALL" ]; then
+if [ "$CREATEIMG" != "" ]; then
+	if echo $CREATEIMG | grep -v ^/ 2>&1 > /dev/null; then
+		CREATEIMG="`pwd`/$CREATEIMG"
+	fi
+fi
+
+if [ \( "$TARBALL" = "" -o ! -f "$TARBALL" \) -a "$CREATEIMG" = "" ]; then
 	msg "Source package not found"
 	usage
 	exit 1
@@ -89,10 +105,21 @@ if [ "$LOGDEST" = "" ]; then
 	LOGDEST=$DEFAULT_PKGDEST
 fi
 
-
 makeroot
-fs_bind
-(quickinst)
+if [ "$USEIMG" = "" ]; then
+	fs_bind
+	(quickinst)
+else
+	tar -xjf $USEIMG $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/
+fi
+
+if [ "$CREATEIMG" != "" ]; then
+	fs_unbind
+	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+	tar -cjf $CREATEIMG *
+	cleanup
+	exit 0
+fi
 
 # mount kernel stuff to make system sane
 fs_mount

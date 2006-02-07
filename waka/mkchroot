@@ -91,6 +91,11 @@ if [ "$CREATEIMG" != "" ]; then
 	fi
 fi
 
+if [ "$TARBALL" != "" ]; then
+	if echo $TARBALL | grep -v ^/ 2>&1 > /dev/null; then
+		TARBALL="`pwd`/$TARBALL"
+	fi
+fi
 if [ \( "$TARBALL" = "" -o ! -f "$TARBALL" \) -a "$CREATEIMG" = "" ]; then
 	msg "Source package not found"
 	usage
@@ -110,10 +115,13 @@ if [ "$USEIMG" = "" ]; then
 	fs_bind
 	(quickinst)
 else
-	tar -xjf $USEIMG $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/
+	msg "Extracting image..."
+	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+	tar -xjf $USEIMG
 fi
 
 if [ "$CREATEIMG" != "" ]; then
+	msg "Creating image..."
 	fs_unbind
 	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
 	tar -cjf $CREATEIMG *
@@ -145,7 +153,7 @@ if [ -f $TARBALL ]; then
 	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
 else
 	error "Could not find source tarball!"
-	exit 2
+#	exit 2
 fi
 
 fs_unbind

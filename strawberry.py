@@ -103,19 +103,25 @@ def canBuild():
 	return Build.select().count() < strawberryConfig['maxBuilds']
 
 def getNextBuild():
-	server = xmlrpclib.ServerProxy(strawberryConfig['url'])
-	build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'])
-	if build is not None and build is not False:
-		return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
-	return None
+	try:
+		server = xmlrpclib.ServerProxy(strawberryConfig['url'])
+		build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'])
+		if build is not None and build is not False:
+			return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
+		return None
+	except xmlrpclib.ProtocolError:
+		return None
 
 def sendBuild(build, binary, log):
-	server = xmlrpclib.ServerProxy(strawberryConfig['url'])
-	if binary is not False:
-		bin64 = binary.encode('base64')
-	else:
-		bin64 = False
-	server.submitBuild(strawberryConfig['user'], strawberryConfig['password'], build.cherryId, bin64, log.encode('base64'))
+	try:
+		server = xmlrpclib.ServerProxy(strawberryConfig['url'])
+		if binary is not False:
+			bin64 = binary.encode('base64')
+		else:
+			bin64 = False
+		server.submitBuild(strawberryConfig['user'], strawberryConfig['password'], build.cherryId, bin64, log.encode('base64'))
+	except xmlrpclib.ProtocolError:
+		return False
 
 def usage():
 	print "usage: strawberry.py [-c <config>]"

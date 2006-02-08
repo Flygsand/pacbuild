@@ -90,7 +90,7 @@ class ThreadedXMLRPC(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRP
 
 def init():
 	global server
-	server = SimpleXMLRPCServer.SimpleXMLRPCServer(("", 8888))
+	server = SimpleXMLRPCServer.SimpleXMLRPCServer(("", 8888), logRequests=False)
 	server.register_instance(RPCDaemon())
 
 def process():

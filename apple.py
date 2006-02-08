@@ -19,22 +19,46 @@
 # 
 
 import sys
-sys.path.append('/etc')
-import appleConfig
+#sys.path.append('/etc')
+#import appleConfig
+import getopt
+import os, os.path
 from pacbuild.apple import connect, rpc, package
+
+defaultConfig = "/etc/appleConfig.py"
+appleConfig = {}
+
+def usage():
+	print "usage: apple.py [options]"
+	print "options:"
+	print "       -c <config>     : use a different config than the default (%s)" % defaultConfig
+	sys.exit(2)
 
 def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	connect(appleConfig.database)
+	try:
+		optlist, args = getopt.getopt(argv[1:], "c:")
+	except getopt.GetoptError:
+		usage()
+
+	configPath = defaultConfig
+	for i, k in optlist:
+		if i == '-c':
+			if os.path.isfile(k):
+				configPath = k
+
+	execfile(configPath, appleConfig, appleConfig)
+
+	connect(appleConfig['database'])
 
 	rpc.init()
 
 	try:
 		while True:
 			for i in package.getBuilds():
-				if i.isStale(appleConfig.stalePackageTimeout):
+				if i.isStale(appleConfig['stalePackageTimeout']):
 					i.unbuild()
 			rpc.process()
 	except KeyboardInterrupt:

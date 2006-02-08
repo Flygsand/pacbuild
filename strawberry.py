@@ -180,7 +180,8 @@ def sendBuild(build, binary, log):
 		return False
 
 def usage():
-	print "usage: strawberry.py [-c <config>]"
+	print "usage: strawberry.py [options]"
+	print "options:"
 	print "       -c <config>     : use a different config than the default (%s)" % defaultConfig
 	print "       -d              : run as a daemon"
 	sys.exit(2)

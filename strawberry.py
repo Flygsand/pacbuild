@@ -202,6 +202,9 @@ def _main(argv=None):
 				configPath = k
 		if i == "-d":
 			createDaemon()
+			pid = open('/var/run/strawberry.pid', 'w')
+			pid.write('%s\n' % os.getpid())
+			pid.close()
 
 	execfile(configPath, strawberryConfig, strawberryConfig)
 

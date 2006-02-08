@@ -107,6 +107,9 @@ def _main(argv=None):
 				configPath = k
 		if i == '-d':
 			createDaemon()
+			pid = open('/var/run/apple.pid', 'w')
+			pid.write('%s\n' % os.getpid())
+			pid.close()
 
 	execfile(configPath, appleConfig, appleConfig)
 

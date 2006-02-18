@@ -36,6 +36,9 @@ database = connectionForURI("sqlite://%s/strawberry.db"%DBdir)
 
 sleeptime = 600
 
+currentUrl = "ftp://ftp.archlinux.org/current/os/${CARCH}"
+extraUrl = "ftp://ftp.archlinux.org/extra/os/${CARCH}"
+
 pacmanConf = """
 [options]
 LogFile     = /var/log/pacman.log

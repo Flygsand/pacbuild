@@ -108,9 +108,11 @@ class Build(SQLObject):
 			return self._SO_get_source().decode('base64')
 
 class Waka(threading.Thread):
-	def __init__(self, build, buildDir, **other):
+	def __init__(self, build, buildDir, currentUrl, extraUrl, **other):
 		threading.Thread.__init__(self, *other)
 		self.buildDir = buildDir
+		self.currentUrl = currentUrl
+		self.extraUrl = extraUrl
 		self.build = build
 		self.filename = build.sourceFilename
 		self.sourcePkg = os.path.join(self.buildDir, self.filename)
@@ -131,8 +133,8 @@ class Waka(threading.Thread):
 		conf.write('WAKA_ROOT_DIR="%s"\n'%self.buildDir)
 		conf.write('WAKA_CHROOT_DIR="chroot/"\n')
 		conf.write('QUIKINST_LOCATION="/usr/share/waka/quickinst"\n')
-		conf.write('PACKAGE_MIRROR_CURRENT="ftp://ftp.archlinux.org/current/os/${CARCH}"\n')
-		conf.write('PACKAGE_MIRROR_EXTRA="ftp://ftp.archlinux.org/extra/os/${CARCH}"\n')
+		conf.write('PACKAGE_MIRROR_CURRENT="%s"\n' % self.currentUrl)
+		conf.write('PACKAGE_MIRROR_EXTRA="%s"\n' % self.extraUrl)
 		conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
 		conf.write('DEFAULT_KERNEL=kernel26\n')
 		conf.close()
@@ -216,7 +218,7 @@ def _main(argv=None):
 	# Start any builds that never actually finished last time
 	for i in Build.select():
 		if not os.path.isdir(os.path.join(strawberryConfig['buildDir'], i.sourceFilename)):
-			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename))
+			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'])
 			waka.start()
 			threads.append(waka)
 
@@ -227,7 +229,7 @@ def _main(argv=None):
 				print "Got a new build: %s" % build.sourceFilename
 				
 				# This is where you'd set up waka
-				waka = Waka(build, os.path.join(strawberryConfig['buildDir'], build.sourceFilename))
+				waka = Waka(build, os.path.join(strawberryConfig['buildDir'], build.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'])
 				waka.start()
 				threads.append(waka)
 		for i, v in enumerate(threads):

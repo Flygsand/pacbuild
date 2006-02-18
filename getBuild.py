@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # 
-# updatePkgbuild - Temporary script to upload PKBUILD to an apple instance
+# getBuild - Temporary script to download package file from apple
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify

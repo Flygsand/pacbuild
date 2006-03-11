@@ -168,7 +168,7 @@ def getNextBuild():
 		if build is not None and build is not False:
 			return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
 		return None
-	except xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error:
+	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
 		return None
 
 def sendBuild(build, binary, log):
@@ -179,7 +179,7 @@ def sendBuild(build, binary, log):
 		else:
 			bin64 = False
 		server.submitBuild(strawberryConfig['user'], strawberryConfig['password'], build.cherryId, bin64, log.encode('base64'))
-	except xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error:
+	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
 		return False
 
 def usage():

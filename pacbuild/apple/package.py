@@ -20,6 +20,9 @@
 
 from sqlobject import *
 from datetime import datetime
+import os, os.path
+
+packagedir = None
 
 class Package(SQLObject):
 	name = StringCol()
@@ -32,31 +35,43 @@ class Package(SQLObject):
 	priority = IntCol()
 
 	log = StringCol(default=None)
-	binary = StringCol(default=None)
-	source = StringCol(default=None)
 	user = ForeignKey('User', default=None)
 
 	def _set_binary(self, value):
+		filename = '%s-%s_%s-%s-%s.pkg.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)
+		fullpath = os.path.join(packagedir, filename)
 		if value is not None and value != False:
-			self._SO_set_binary(value.encode('base64').replace('\n',''))
+			f = open(fullpath, "wb")
+			f.write(value)
+			f.close()
 		else:
-			self._SO_set_binary(None)
+			os.unlink(fullpath)
 	def _get_binary(self):
-		if self._SO_get_binary() == None:
+		filename = '%s-%s_%s-%s-%s.pkg.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)
+		fullpath = os.path.join(packagedir, filename)
+		if not os.path.isfile(fullpath):
 			return None
 		else:
-			return self._SO_get_binary().decode('base64')
+			f = open(fullpath, "rb")
+			return (f.read(), f.close())[0]
 
 	def _set_source(self, value):
+		filename = '%s-%s_%s-%s-%s.src.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)
+		fullpath = os.path.join(packagedir, filename)
 		if value is not None:
-			self._SO_set_source(value.encode('base64').replace('\n',''))
+			f = open(fullpath, "wb")
+			f.write(value)
+			f.close()
 		else:
-			self._SO_set_source(None)
+			os.unlink(fullpath)
 	def _get_source(self):
-		if self._SO_get_source() == None:
+		filename = '%s-%s_%s-%s-%s.src.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)
+		fullpath = os.path.join(packagedir, filename)
+		if not os.path.isfile(fullpath):
 			return None
 		else:
-			return self._SO_get_source().decode('base64')
+			f = open(fullpath, "rb")
+			return (f.read(), f.close())[0]
 
 	def build(self, user):
 		if self.status == 'queued':

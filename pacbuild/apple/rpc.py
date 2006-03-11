@@ -67,7 +67,8 @@ class RPCDaemon:
 		user = authUser(user, password)
 		if not user or user.type != 'submitter':
 			return False
-		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=user.arch, priority=priority, source=source.decode('base64'))
+		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=user.arch, priority=priority)
+		build.source = source.decode('base64')
 		return build.id
 
 	def getPackage(self, user, password, id):

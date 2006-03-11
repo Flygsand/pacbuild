@@ -114,6 +114,7 @@ def _main(argv=None):
 	execfile(configPath, appleConfig, appleConfig)
 
 	connect(appleConfig['database'])
+	package.packagedir = appleConfig['Packagedir']
 
 	rpc.init()
 

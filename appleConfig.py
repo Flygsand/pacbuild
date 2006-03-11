@@ -21,6 +21,7 @@ import os, os.path
 import datetime
 
 DBdir = '/var/lib/pacbuild'
+Packagedir = '/var/lib/pacbuild/apple'
 if not os.path.isdir(DBdir):
 	os.makedirs(DBdir)
 database = connectionForURI("sqlite://%s/apple.db"%DBdir)

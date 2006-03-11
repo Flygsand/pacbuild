@@ -25,7 +25,8 @@ from pacbuild.apple import connect, package
 import cgi
 import re
 
-connect(appleConfig.database)
+connect(appleConfig['database'])
+package.packagedir = appleConfig['Packagedir']
 
 def job_list():
 	print '''Content-type: text/html

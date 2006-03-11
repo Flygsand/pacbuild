@@ -34,16 +34,32 @@ def job_list():
 <html>
 <head>
 <title>Apple Status</title>
+<style type="text/css">
+<!--
+
+.error {
+	background-color: red;
+}
+.done {
+	background-color: #5FFB17;
+}
+.building {
+	background-color: #9AFEFF;
+}
+
+
+-->
+</style>
 </head>
 <body>
-<table cellpadding='5px'>
+<table cellpadding='5px' cellspacing='0px'>
 <tr>
 	<th>Package</th><th>Arch</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
 </tr>
 '''
 	
 	for i in package.Package.select():
-		print "<tr>"
+		print "<tr class='%s'>" % i.status
 		print "<td>%s-%s-%s</td><td>%s</td><td>%s</td>"%(i.name,i.pkgver,i.pkgrel,i.arch.name,i.status)
 		print "<td><a href='?action=log&id=%s'>Log</a></td>"%(i.id)
 		print "<td><a href='?action=colorlog&id=%s'>Colorized Log</a></td>"%(i.id)

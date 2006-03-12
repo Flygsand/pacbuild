@@ -111,13 +111,24 @@ if [ "$LOGDEST" = "" ]; then
 fi
 
 makeroot
+if [ $? -ne 0 ]; then
+	error "Can't create chroot directory"
+fi
 if [ "$USEIMG" = "" ]; then
 	fs_bind
 	(quickinst)
+	if [ $? -ne 0 ]; then
+		fs_unbind
+		error "Can't build chroot"
+	fi
 else
 	msg "Extracting image..."
 	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
 	tar -xjf $USEIMG
+	if [ $? -ne 0 ]; then
+		fs_unbind
+		error "Can't extract image"
+	fi
 fi
 
 if [ "$CREATEIMG" != "" ]; then
@@ -125,15 +136,31 @@ if [ "$CREATEIMG" != "" ]; then
 	fs_unbind
 	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
 	tar -cjf $CREATEIMG *
+	if [ $? -ne 0 ]; then
+		cleanup
+		error "Can't create image"
+	fi
 	cleanup
 	exit 0
 fi
 
 # mount kernel stuff to make system sane
 fs_mount
+if [ $? -ne 0 ]; then
+	fs_umount
+	fs_unbind
+	cleanup
+	error "Problem mounting filesystems"
+fi
 
 # copy general configuration from host system
 conf_update
+if [ $? -ne 0 ]; then
+	fs_umount
+	fs_unbind
+	cleanup
+	error "Problem updating configs"
+fi
 
 if [ -f $TARBALL ]; then
 	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka
@@ -152,8 +179,10 @@ if [ -f $TARBALL ]; then
 	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/$pkgname-$pkgver-$pkgrel.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
 	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
 else
+	fs_unbind
+	fs_unmount
+	cleanup
 	error "Could not find source tarball!"
-#	exit 2
 fi
 
 fs_unbind

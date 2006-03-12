@@ -74,30 +74,36 @@ makeroot() {
 }
 
 fs_mount() {
+	ret=0
 	msg "Mounting sysfs..."
-		mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys
+		mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
 	msg "Mounting procfs..."
-		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
-		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
+		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
+		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
 	msg "Creating dev..."
-		cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
+		cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev || ret=1
+	return $ret
 }
 
 fs_umount() {
+	ret=0
 	msg "Umounting sysfs..."
-		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
 	msg "Umounting procfs..."
-		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb
-		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
 #	msg "Umounting devfs..."
 #		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
+
+	return $ret
 }
 
 fs_bind() {
 	msg "Using global package cache..."
 		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
 #		mount --bind /var/cache/pacman/pkg/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
-		cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
+		# Try hard linking and if that doesn't work, try copying
+		cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || return 1
 #	msg "Using global source cache..."
 #		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
 #		mount --bind /var/cache/pacman/src/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src/
@@ -115,11 +121,11 @@ quickinst() {
 		rm /tmp/packages.txt
 	fi
 	msg "Running ${QUIKINST_LOCATION} ftp ${WAKA_ROOT_DIR}/${WAKA_CHROOT_DIR} ${PACKAGE_MIRROR_CURRENT}"
-	. $QUIKINST_LOCATION ftp $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR $PACKAGE_MIRROR_CURRENT
+	. $QUIKINST_LOCATION ftp $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR $PACKAGE_MIRROR_CURRENT || return 1
 }
 
 conf_update() {
-	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc
+	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc || return 1
 
 	if [ "$PACMANFILE" = "" ]; then
 		echo "[current]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
@@ -128,6 +134,6 @@ conf_update() {
 		echo "[extra]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
 		echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
 	else
-		cp $PACMANFILE $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.conf
+		cp $PACMANFILE $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.conf || return 1
 	fi
 }

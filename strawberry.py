@@ -25,6 +25,7 @@ import socket
 import threading
 import os, os.path
 import re
+import datetime
 import time
 import shutil
 import getopt
@@ -109,13 +110,14 @@ class Build(SQLObject):
 			return self._SO_get_source().decode('base64')
 
 class Waka(threading.Thread):
-	def __init__(self, build, buildDir, currentUrl, extraUrl, **other):
+	def __init__(self, build, buildDir, currentUrl, extraUrl, chrootImage=None, **other):
 		threading.Thread.__init__(self, *other)
 		self.buildDir = buildDir
 		self.currentUrl = currentUrl
 		self.extraUrl = extraUrl
 		self.build = build
 		self.filename = build.sourceFilename
+		self.chrootImage = chrootImage
 		self.sourcePkg = os.path.join(self.buildDir, self.filename)
 		self.makeWakaConf()
 		self.makeSourceFile(build.source)
@@ -145,7 +147,10 @@ class Waka(threading.Thread):
 			pacmanconf.close()
 
 	def run(self):
-		os.system("/usr/bin/mkchroot -p %s -o %s %s"%(self.pacmanconfPath, self.mkchrootPath, self.sourcePkg))
+		addargs = ""
+		if self.chrootImage:
+			addargs = "-i %s" % self.chrootImage
+		os.system("/usr/bin/mkchroot -p %s -o %s %s %s"%(self.pacmanconfPath, self.mkchrootPath, addargs, self.sourcePkg))
 		# Do the post build stuff
 		self.binaryPkg = re.sub('\.src\.tar\.gz$', '.pkg.tar.gz', self.sourcePkg)
 		self.logFile = re.sub('\.src\.tar\.gz$', '.makepkg.log', self.sourcePkg)
@@ -181,6 +186,9 @@ def sendBuild(build, binary, log):
 		server.submitBuild(strawberryConfig['user'], strawberryConfig['password'], build.cherryId, bin64, log.encode('base64'))
 	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
 		return False
+
+def mkchroot(imgpath):
+	os.system("/usr/bin/mkchroot -c %s" % imgpath)
 
 def usage():
 	print "usage: strawberry.py [options]"
@@ -219,18 +227,34 @@ def _main(argv=None):
 	# Start any builds that never actually finished last time
 	for i in Build.select():
 		if not os.path.isdir(os.path.join(strawberryConfig['buildDir'], i.sourceFilename)):
-			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'])
+			otherargs = {}
+			if strawberryConfig.has_key('chrootImage'):
+				otherargs['chrootImage'] = strawberryConfig['chrootImage']
+			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'], **otherargs)
 			waka.start()
 			threads.append(waka)
 
 	while True:
 		if canBuild():
+			if strawberryConfig.has_key('chrootImage'):
+				if os.path.isfile(strawberryConfig['chrootImage']):
+					stat = os.stat(strawberryConfig['chrootImage'])
+					today = datetime.datetime.now()
+					mtime = datetime.datetime(*time.localtime(stat.st_mtime)[:7])
+					staleDiff = datetime.timedelta(days=14)
+					if today - mtime >= staleDiff:
+						mkchroot(strawberryConfig['chrootImage'])
+				else:
+					mkchroot(strawberryConfig['chrootImage'])
 			build = getNextBuild()
 			if build is not None and build is not False:
 				print "Got a new build: %s" % build.sourceFilename
 				
 				# This is where you'd set up waka
-				waka = Waka(build, os.path.join(strawberryConfig['buildDir'], build.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'])
+				otherargs = {}
+				if strawberryConfig.has_key('chrootImage'):
+					otherargs['chrootImage'] = strawberryConfig['chrootImage']
+				waka = Waka(build, os.path.join(strawberryConfig['buildDir'], build.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'], **otherargs)
 				waka.start()
 				threads.append(waka)
 		for i, v in enumerate(threads):

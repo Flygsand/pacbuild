@@ -34,6 +34,9 @@ if not os.path.isdir(DBdir):
 	os.makedirs(DBdir)
 database = connectionForURI("sqlite://%s/strawberry.db"%DBdir)
 
+# Comment out if you want the chroot built every time
+chrootImage = '%s/strawberry.img' % DBdir
+
 sleeptime = 600
 
 currentUrl = "ftp://ftp.archlinux.org/current/os/${CARCH}"

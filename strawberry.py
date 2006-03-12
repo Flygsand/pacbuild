@@ -37,6 +37,8 @@ defaultConfig = "/etc/strawberryConfig.py"
 #import strawberryConfig
 strawberryConfig = {}
 
+done = False
+
 UMASK = 0
 
 WORKDIR = "/"
@@ -147,10 +149,17 @@ class Waka(threading.Thread):
 			pacmanconf.close()
 
 	def run(self):
+		global done
 		addargs = ""
 		if self.chrootImage:
 			addargs = "-i %s" % self.chrootImage
-		os.system("/usr/bin/mkchroot -p %s -o %s %s %s"%(self.pacmanconfPath, self.mkchrootPath, addargs, self.sourcePkg))
+		ret = os.system("/usr/bin/mkchroot -p %s -o %s %s %s"%(self.pacmanconfPath, self.mkchrootPath, addargs, self.sourcePkg))
+		if ret != 0:
+			# There was an error building
+			# Log something so the admin can figure out what's up
+			# Tell apple
+			shutil.rmtree(self.buildDir)
+			done = True
 		# Do the post build stuff
 		self.binaryPkg = re.sub('\.src\.tar\.gz$', '.pkg.tar.gz', self.sourcePkg)
 		self.logFile = re.sub('\.src\.tar\.gz$', '.makepkg.log', self.sourcePkg)
@@ -234,7 +243,7 @@ def _main(argv=None):
 			waka.start()
 			threads.append(waka)
 
-	while True:
+	while not done:
 		if canBuild():
 			if strawberryConfig.has_key('chrootImage'):
 				if os.path.isfile(strawberryConfig['chrootImage']):

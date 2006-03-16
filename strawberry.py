@@ -244,6 +244,11 @@ def _main(argv=None):
 			threads.append(waka)
 
 	while not done:
+		for i, v in enumerate(threads):
+			if not v.isAlive():
+				print "Cleaning up from thread"
+				Build.delete(v.build.id)
+				del threads[i]
 		if canBuild():
 			if strawberryConfig.has_key('chrootImage'):
 				if os.path.isfile(strawberryConfig['chrootImage']):
@@ -266,11 +271,6 @@ def _main(argv=None):
 				waka = Waka(build, os.path.join(strawberryConfig['buildDir'], build.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'], **otherargs)
 				waka.start()
 				threads.append(waka)
-		for i, v in enumerate(threads):
-			if not v.isAlive():
-				print "Cleaning up from thread"
-				Build.delete(waka.build.id)
-				del threads[i]
 		time.sleep(strawberryConfig['sleeptime'])
 			
 

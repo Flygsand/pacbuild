@@ -29,6 +29,7 @@ import datetime
 import time
 import shutil
 import getopt
+from syslog import *
 
 from sqlobject import *
 
@@ -150,6 +151,7 @@ class Waka(threading.Thread):
 
 	def run(self):
 		global done
+		syslog(LOG_INFO, "Beginning build of %s"%(self.build.sourceFilename))
 		addargs = ""
 		if self.chrootImage:
 			addargs = "-i %s" % self.chrootImage
@@ -158,6 +160,7 @@ class Waka(threading.Thread):
 			# There was an error building
 			# Log something so the admin can figure out what's up
 			# Tell apple
+			syslog(LOG_ERR, "Error building %s"%(self.build.sourceFilename))
 			shutil.rmtree(self.buildDir)
 			done = True
 		# Do the post build stuff
@@ -180,9 +183,11 @@ def getNextBuild():
 		server = xmlrpclib.ServerProxy(strawberryConfig['url'])
 		build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'])
 		if build is not None and build is not False:
+			syslog(LOG_INFO, "Got %s from %s for next build"%(build[1], strawberryConfig['url']))
 			return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
 		return None
 	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
+		syslog(LOG_ERR, "Couldn't fetch next build from %s"%(strawberryConfig['url']))
 		return None
 
 def sendBuild(build, binary, log):
@@ -194,7 +199,10 @@ def sendBuild(build, binary, log):
 			bin64 = False
 		server.submitBuild(strawberryConfig['user'], strawberryConfig['password'], build.cherryId, bin64, log.encode('base64'))
 	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
+		syslog(LOG_ERR, "Couldn't upload %s to %s"%(build.sourceFilename, strawberryConfig['url']))
 		return False
+	
+	syslog(LOG_INFO, "Uploaded %s to %s"%(build.sourceFilename, strawberryConfig['url']))
 
 def mkchroot(imgpath):
 	os.system("/usr/bin/mkchroot -c %s" % imgpath)
@@ -226,6 +234,9 @@ def _main(argv=None):
 			pid.write('%s\n' % os.getpid())
 			pid.close()
 
+	openlog("strawberry", LOG_PID, LOG_USER)
+	syslog(LOG_INFO, "Started strawberry")
+
 	execfile(configPath, strawberryConfig, strawberryConfig)
 
 	Build.setConnection(strawberryConfig['database'])
@@ -239,6 +250,7 @@ def _main(argv=None):
 			otherargs = {}
 			if strawberryConfig.has_key('chrootImage'):
 				otherargs['chrootImage'] = strawberryConfig['chrootImage']
+			syslog(LOG_INFO, "Resuming unfinished build - %s"%(i.sourceFilename))
 			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'], **otherargs)
 			waka.start()
 			threads.append(waka)

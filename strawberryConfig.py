@@ -18,11 +18,15 @@
 # 
 
 from sqlobject import *
+from socket import gethostname
 import os, os.path
 
 user = ''
 password = ''
 url = 'http://localhost:8888'
+# Each of your build machines should have a unique ident
+# Defaults to hostname
+ident = gethostname()
 
 buildDir = '/mnt/temp/wakachroot'
 

@@ -21,7 +21,7 @@
 import sys
 sys.path.append('/etc')
 import appleConfig
-from pacbuild.apple import connect, package
+from pacbuild.apple import connect, package, misc
 import cgi
 import re
 
@@ -33,7 +33,7 @@ def job_list():
 
 <html>
 <head>
-<title>Apple Status</title>
+<title>Apple Status - Job Queue</title>
 <style type="text/css">
 <!--
 
@@ -87,6 +87,23 @@ def pkg_file(id=0):
 	print "Content-type: application/x-compressed;"
 	print "Content-Disposition: attachment; filename=\""+pkg.name+"-"+pkg.pkgver+"-"+pkg.pkgrel+".pkg.tar.gz\"\n"
 	sys.stdout.write(pkg.binary)
+
+def builder_list():
+	print '''Content-type: text/html
+
+<html>
+<head>
+<title>Apple Status - Build Machines</title>
+</head>
+<body>
+<table cellpadding='5px' cellspacing='0px'>
+<tr>
+	<th>Owner</th><th>Identifier</th>
+</tr>
+'''
+	for i in misc.Builder.select():
+		print "<tr><td>%s</td><td>%s</td></tr>"%(i.user.name, i.ident)
+	print "</table></body></html>"
 	
 def main():
 	form = cgi.FieldStorage()
@@ -99,6 +116,8 @@ def main():
 			pkg_file(form["id"].value)
 		else:
 			job_list()
+	elif (form.has_key("action") and form["action"].value == "builders"):
+		builder_list()
 	else:
 		job_list()
 

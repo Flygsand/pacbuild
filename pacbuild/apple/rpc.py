@@ -21,6 +21,7 @@
 import SimpleXMLRPCServer
 import SocketServer
 import package
+from misc import Builder
 from pacbuild.apple import authUser
 import select
 from sqlobject import *
@@ -85,6 +86,17 @@ class RPCDaemon:
 		else:
 			log = ''
 		return ("%s-%s-%s.pkg.tar.gz" % (build.name, build.pkgver, build.pkgrel), binary, log)
+	
+	def beat(self, user, password, ident):
+		user = authUser(user, password)
+		if not user:
+			return False
+		j = list(Builder.select(AND(Builder.q.userID == user.id, Builder.q.ident == ident)))
+		if not j:
+			j = Builder(user=user, ident=ident)
+			return True
+		j[0].lastBeat = datetime.now()
+		return True
 
 class ThreadedXMLRPC(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
 	pass

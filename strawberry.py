@@ -175,6 +175,20 @@ class Waka(threading.Thread):
 		sendBuild(self.build, binary, log)
 		shutil.rmtree(self.buildDir)
 
+class Heartbeat(threading.Thread):
+	def __init__(self, **other):
+		threading.Thread.__init__(self, *other)
+		self.pulse = 3600
+	def run(self):
+		while True:
+			try:
+				server = xmlrpclib.ServerProxy(strawberryConfig['url'])
+				server.beat(strawberryConfig['user'], strawberryConfig['password'], strawberryConfig['ident'])
+			except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
+				syslog(LOG_ERR, "Unable to send heartbeat")
+				pass
+			time.sleep(self.pulse)
+
 def canBuild():
 	return Build.select().count() < strawberryConfig['maxBuilds']
 
@@ -241,6 +255,10 @@ def _main(argv=None):
 
 	Build.setConnection(strawberryConfig['database'])
 	Build.createTable(ifNotExists=True)
+
+	# Kick off our heartbeat thread
+	heartbeat = Heartbeat()
+	heartbeat.start()
 
 	threads = []
 

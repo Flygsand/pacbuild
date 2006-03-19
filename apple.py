@@ -23,7 +23,8 @@ import sys
 #import appleConfig
 import getopt
 import os, os.path
-from pacbuild.apple import connect, rpc, package
+from pacbuild.apple import connect, rpc, package, misc
+import datetime
 
 defaultConfig = "/etc/appleConfig.py"
 appleConfig = {}
@@ -119,10 +120,14 @@ def _main(argv=None):
 	rpc.init()
 
 	try:
+		builderTimeout = datetime.timedelta(hours=1, minutes=5)
 		while True:
 			for i in package.getBuilds():
 				if i.isStale(appleConfig['stalePackageTimeout']):
 					i.unbuild()
+			for i in misc.Builder.select():
+				if (datetime.datetime.now() - i.lastBeat >= builderTimeout):
+					misc.Builder.delete(i.id)
 			rpc.process()
 	except KeyboardInterrupt:
 		pass

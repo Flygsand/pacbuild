@@ -19,6 +19,7 @@
 # 
 
 from sqlobject import *
+from datetime import datetime
 
 class Arch(SQLObject):
 	name = StringCol(alternateID=True)
@@ -32,3 +33,8 @@ class User(SQLObject):
 	arch = ForeignKey('Arch')
 	packages = MultipleJoin('Package')
 	type = EnumCol(enumValues=('builder', 'submitter'))
+
+class Builder(SQLObject):
+	user = ForeignKey('User')
+	ident = StringCol()
+	lastBeat = DateTimeCol(default=datetime.now)

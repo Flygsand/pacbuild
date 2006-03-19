@@ -28,6 +28,8 @@ def connect(conn):
 	misc.Arch.createTable(ifNotExists=True)
 	misc.User.setConnection(conn)
 	misc.User.createTable(ifNotExists=True)
+	misc.Builder.setConnection(conn)
+	misc.Builder.createTable(ifNotExists=True)
 
 	package.Package.setConnection(conn)
 	package.Package.createTable(ifNotExists=True)

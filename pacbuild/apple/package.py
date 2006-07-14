@@ -45,7 +45,8 @@ class Package(SQLObject):
 			f.write(value)
 			f.close()
 		else:
-			os.unlink(fullpath)
+			if os.path.isfile(fullpath):
+				os.unlink(fullpath)
 	def _get_binary(self):
 		filename = '%s-%s_%s-%s-%s.pkg.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)
 		fullpath = os.path.join(packagedir, filename)
@@ -63,7 +64,8 @@ class Package(SQLObject):
 			f.write(value)
 			f.close()
 		else:
-			os.unlink(fullpath)
+			if os.path.isfile(fullpath):
+				os.unlink(fullpath)
 	def _get_source(self):
 		filename = '%s-%s_%s-%s-%s.src.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)
 		fullpath = os.path.join(packagedir, filename)

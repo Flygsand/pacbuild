@@ -21,7 +21,7 @@
 import SimpleXMLRPCServer
 import SocketServer
 import package
-from misc import Builder
+from misc import Builder, PacmanConf
 from pacbuild.apple import authUser
 import select
 from sqlobject import *
@@ -41,7 +41,7 @@ class RPCDaemon:
 		if nextBuild == None:
 			return False
 		nextBuild.build(user)
-		return (nextBuild.id, '%s-%s-%s.src.tar.gz'%(nextBuild.name, nextBuild.pkgver, nextBuild.pkgrel), nextBuild.source.encode('base64'))
+		return (nextBuild.id, '%s-%s-%s.src.tar.gz'%(nextBuild.name, nextBuild.pkgver, nextBuild.pkgrel), nextBuild.source.encode('base64'), nextBuild.pacmanconf.name, nextBuild.pacmanconf.md5sum())
 
 	def submitBuild(self, user, password, buildId, data, log):
 		user = authUser(user, password)
@@ -64,11 +64,15 @@ class RPCDaemon:
 		build.finish(data, log)
 		return True
 
-	def submitPKGBUILD(self, user, password, name, pkgver, pkgrel, priority, source):
+	def submitPKGBUILD(self, user, password, name, pkgver, pkgrel, priority, pacmanconfig, source):
 		user = authUser(user, password)
 		if not user or user.type != 'submitter':
 			return False
-		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=user.arch, priority=priority)
+		try:
+			pconf = PacmanConf.byName(pacmanconfig)
+		except:
+			return False
+		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=user.arch, priority=priority, pacmanconf=pconf)
 		build.source = source.decode('base64')
 		return build.id
 
@@ -97,6 +101,17 @@ class RPCDaemon:
 			return True
 		j[0].lastBeat = datetime.now()
 		return True
+
+	def getPacmanConfig(self, user, password, name):
+		user = authUser(user, password)
+		if not user:
+			return False
+		try:
+			conf = PacmanConf.byName(name)
+			return (conf.name, conf.data)
+		except:
+			return False
+
 
 class ThreadedXMLRPC(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
 	pass

@@ -30,6 +30,7 @@ import time
 import shutil
 import getopt
 from syslog import *
+from md5 import md5
 
 from sqlobject import *
 
@@ -39,6 +40,8 @@ defaultConfig = "/etc/strawberryConfig.py"
 strawberryConfig = {}
 
 done = False
+
+pacmanConfigs = []
 
 UMASK = 0
 
@@ -96,10 +99,19 @@ def createDaemon():
 
 	return(0)
 
+class PacmanConf:
+	def __init__(self, name, data):
+		self.name = name
+		self.data = data
+	def md5sum(self):
+		return md5(self.data).hexdigest()
+
 class Build(SQLObject):
 	cherryId = IntCol()
 	sourceFilename = StringCol()
 	source = StringCol()
+	pacmanConfig = StringCol()
+	pacmanConfigMd5 = StringCol()
 
 	def _set_source(self, value):
 		if value is not None:
@@ -144,9 +156,13 @@ class Waka(threading.Thread):
 		conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
 		conf.write('DEFAULT_KERNEL=kernel26\n')
 		conf.close()
-		if strawberryConfig.has_key('pacmanConf'):
+		thisconf = getPacmanConfig(self.build.pacmanConfig, self.build.pacmanConfigMd5)
+		if not thisconf:
+			syslog(LOG_ERR, "Don't have pacman.conf for %s, using mkchroot defaults"%(self.filename))
+			self.pacmanconfPath = ""
+		else:
 			pacmanconf = open(self.pacmanconfPath, "w")
-			pacmanconf.write(strawberryConfig['pacmanConf'])
+			pacmanconf.write(thisconf.data)
 			pacmanconf.close()
 
 	def run(self):
@@ -155,7 +171,9 @@ class Waka(threading.Thread):
 		addargs = ""
 		if self.chrootImage:
 			addargs = "-i %s" % self.chrootImage
-		ret = os.system("/usr/bin/mkchroot -p %s -o %s %s %s"%(self.pacmanconfPath, self.mkchrootPath, addargs, self.sourcePkg))
+		if self.pacmanconfPath:
+			addargs = addargs + " -p %s" % self.pacmanconfPath
+		ret = os.system("/usr/bin/mkchroot -o %s %s %s"%(self.mkchrootPath, addargs, self.sourcePkg))
 		if ret != 0:
 			# There was an error building
 			# Log something so the admin can figure out what's up
@@ -192,13 +210,36 @@ class Heartbeat(threading.Thread):
 def canBuild():
 	return Build.select().count() < strawberryConfig['maxBuilds']
 
+def getPacmanConfig(name, md5):
+	global pacmanConfigs
+	for i in pacmanConfigs:
+		if (i.name == name and i.md5sum() == md5):
+			return i
+	server = xmlrpclib.ServerProxy(strawberryConfig['url'])
+	try:
+		config = server.getPacmanConfig(strawberryConfig['user'], strawberryConfig['password'], name)
+		if config is not None and config is not False:
+			for i in pacmanConfigs:
+				if (i.name == name):
+					pacmanConfigs.remove(i)
+			config = PacmanConf(config[0], config[1])
+			pacmanConfigs.append(config)
+			syslog(LOG_INFO, "Got pacman config \"%s\" from %s"%(name, strawberryConfig['url']))
+			return config
+		return None
+	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
+		syslog(LOG_ERR, "Failed to retrieve pacman config \"%s\" from %s"%(name, strawberryConfig['url']))
+		return None
+
+
 def getNextBuild():
 	try:
 		server = xmlrpclib.ServerProxy(strawberryConfig['url'])
 		build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'])
 		if build is not None and build is not False:
 			syslog(LOG_INFO, "Got %s from %s for next build"%(build[1], strawberryConfig['url']))
-			return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'))
+			return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'),
+						pacmanConfig=build[3], pacmanConfigMd5=build[4])
 		return None
 	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
 		syslog(LOG_ERR, "Couldn't fetch next build from %s"%(strawberryConfig['url']))

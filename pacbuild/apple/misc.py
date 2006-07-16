@@ -20,6 +20,7 @@
 
 from sqlobject import *
 from datetime import datetime
+from md5 import md5
 
 class Arch(SQLObject):
 	name = StringCol(alternateID=True)
@@ -38,3 +39,10 @@ class Builder(SQLObject):
 	user = ForeignKey('User')
 	ident = StringCol()
 	lastBeat = DateTimeCol(default=datetime.now)
+
+class PacmanConf(SQLObject):
+	name = StringCol(alternateID=True)
+	data = BLOBCol()
+
+	def md5sum(self):
+		return md5(self.data).hexdigest()

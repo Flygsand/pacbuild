@@ -52,6 +52,8 @@ def job_list():
 </style>
 </head>
 <body>
+<a href='?action=builders'>Build Machines</a> <a href='?action=conflist'>Pacman Configurations</a>
+<hr />
 <table cellpadding='5px' cellspacing='0px'>
 <tr>
 	<th>Package</th><th>Arch</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
@@ -105,6 +107,23 @@ def builder_list():
 		print "<tr><td>%s</td><td>%s</td></tr>"%(i.user.name, i.ident)
 	print "</table></body></html>"
 	
+def pacConf_list():
+	print '''Content-type: text/html
+
+<html>
+<head>
+<title>Apple Status - Available Pacman Configurations</title>
+</head>
+<body>
+'''
+	for i in misc.PacmanConf.select():
+		print "<a href='?action=pacmanconfig&id=%s'>%s</a><br />"%(i.id, i.name)
+	print "</body></html>"
+
+def pacman_config(id=0):
+	print "Content-type: text/plain\n"
+	print misc.PacmanConf.get(id).data
+
 def main():
 	form = cgi.FieldStorage()
 	if (form.has_key("action") and form.has_key("id")):
@@ -114,10 +133,14 @@ def main():
 			pkg_colorlog(form["id"].value)
 		elif (form["action"].value == "pkg"):
 			pkg_file(form["id"].value)
+		elif (form["action"].value == "pacmanconfig"):
+			pacman_config(form["id"].value)
 		else:
 			job_list()
 	elif (form.has_key("action") and form["action"].value == "builders"):
 		builder_list()
+	elif (form.has_key("action") and form["action"].value == "conflist"):
+		pacConf_list()
 	else:
 		job_list()
 

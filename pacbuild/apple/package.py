@@ -36,6 +36,7 @@ class Package(SQLObject):
 
 	log = StringCol(default=None)
 	user = ForeignKey('User', default=None)
+	pacmanconf = ForeignKey('PacmanConf')
 
 	def _set_binary(self, value):
 		filename = '%s-%s_%s-%s-%s.pkg.tar.gz' % (self.id, self.arch.name, self.name, self.pkgver, self.pkgrel)

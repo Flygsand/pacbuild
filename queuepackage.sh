@@ -14,11 +14,11 @@ in_source() {
 }
 
 usage() {
-	echo "$0 <url> <account> <password> <priority>"
+	echo "$0 <url> <account> <password> <priority> <pacman config>"
 	exit 1
 }
 
-if [ "$1" = "" -o "$2" = "" -o "$3" = "" -o "$4" = "" ]; then
+if [ "$1" = "" -o "$2" = "" -o "$3" = "" -o "$4" = "" -o "$5" = "" ]; then
 	usage
 fi
 
@@ -42,5 +42,5 @@ for i in *; do
 done
 
 tar czf $pkgname-$pkgver-$pkgrel.src.tar.gz $files
-uploadPkgbuild.py $1 $2 $3 $4 $pkgname $pkgver $pkgrel $pkgname-$pkgver-$pkgrel.src.tar.gz
+uploadPkgbuild.py $1 $2 $3 $4 $5 $pkgname $pkgver $pkgrel $pkgname-$pkgver-$pkgrel.src.tar.gz
 rm $pkgname-$pkgver-$pkgrel.src.tar.gz

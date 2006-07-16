@@ -45,20 +45,3 @@ sleeptime = 600
 
 currentUrl = "ftp://ftp.archlinux.org/current/os/${CARCH}"
 extraUrl = "ftp://ftp.archlinux.org/extra/os/${CARCH}"
-
-pacmanConf = """
-[options]
-LogFile     = /var/log/pacman.log
-NoUpgrade   = etc/passwd etc/group etc/shadow etc/sudoers
-NoUpgrade   = etc/fstab etc/raidtab etc/ld.so.conf
-NoUpgrade   = etc/rc.conf etc/rc.local
-NoUpgrade   = etc/modprobe.conf etc/modules.conf
-NoUpgrade   = etc/lilo.conf boot/grub/menu.lst
-HoldPkg     = pacman glibc
-
-[current]
-Server = ftp://ftp.archlinux.org/current/os/i686
-
-[extra]
-Server = ftp://ftp.archlinux.org/extra/os/i686
-"""

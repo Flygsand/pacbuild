@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # 
-# updatePkgbuild - Temporary script to upload PKBUILD to an apple instance
+# updatePkgbuild - Temporary script to upload PKGBUILD to an apple instance
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -31,15 +31,15 @@ def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	if len(argv) != 9:
-		print "usage: %s <server> <user> <password> <priority> <name> <pkgver> <pkgrel> <source>" % argv[0]
+	if len(argv) != 10:
+		print "usage: %s <server> <user> <password> <priority> <pacman config> <name> <pkgver> <pkgrel> <source>" % argv[0]
 		return 1
 
-	binary = open(argv[8], "rb")
+	binary = open(argv[9], "rb")
 	bin = binary.read().encode('base64')
 
 	server = xmlrpclib.ServerProxy(argv[1])
-	print server.submitPKGBUILD(argv[2], argv[3], argv[5], argv[6], argv[7], int(argv[4]), bin)
+	print server.submitPKGBUILD(argv[2], argv[3], argv[6], argv[7], argv[8], int(argv[4]), argv[5], bin)
 
 if __name__ == "__main__":
 	sys.exit(_main())

@@ -30,6 +30,8 @@ def connect(conn):
 	misc.User.createTable(ifNotExists=True)
 	misc.Builder.setConnection(conn)
 	misc.Builder.createTable(ifNotExists=True)
+	misc.PacmanConf.setConnection(conn)
+	misc.PacmanConf.createTable(ifNotExists=True)
 
 	package.Package.setConnection(conn)
 	package.Package.createTable(ifNotExists=True)

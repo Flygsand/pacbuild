@@ -1,4 +1,31 @@
 #!/bin/sh
+myver="0.4"
+
+if [ ! -f $HOME/.queuepackage.conf ]; then
+echo "Creating bare config in ~/.queuepackage.conf"
+cat > $HOME/.queuepackage.conf << EOF
+# This is the default config file for queuepackage (the pacbuild command line uploading tool)
+# Change these values to be unique to you.  It will make things easier in the long run.
+
+username=""
+password=""
+
+url=""
+
+defaultpriority=1
+
+defaultconfig=""
+EOF
+
+fi
+
+source $HOME/.queuepackage.conf
+
+USERNAME="$username"
+PASSWORD="$password"
+URL="$url"
+CONFIG="$defaultconfig"
+PRIORITY="$defaultpriority"
 
 in_source() {
 	for j in ${source[@]}; do
@@ -14,12 +41,35 @@ in_source() {
 }
 
 usage() {
-	echo "$0 <url> <account> <password> <priority> <pacman config>"
+	echo "queuepackage version $myver"
+	echo
+	echo "Usage: $0 [options]"
+	echo
+	echo "Options:"
+	echo "  -u <username>    Use this username when connecting to apple daemon"
+	echo "  -p <password>    Use this password when connecting to apple daemon"
+	echo "  -l <url>         Use this url when to connect to apple daemon"
+	echo "  -c <config name> Use this config to build the package"
+	echo "  -r <priority>    Set the build priority"
+	echo
+	echo "A config file exists in ~/.queuepackage.conf to store defaults for all of these options"
 	exit 1
 }
 
-if [ "$1" = "" -o "$2" = "" -o "$3" = "" -o "$4" = "" -o "$5" = "" ]; then
+while getopts "u:p:l:c:r:" opt; do
+	case $opt in
+		u) USERNAME="$OPTARG" ;;
+		p) PASSWORD="$OPTARG" ;;
+		l) URL="$OPTARG" ;;
+		c) CONFIG="$OPTARG" ;;
+		r) PRIORITY="$OPTARG" ;;
+		?) usage; exit 1 ;;
+	esac
+done
+
+if [ "$USERNAME" = "" -o "$PASSWORD" = "" -o "$URL" = "" -o "$CONFIG" = "" -o "$PRIORITY" = "" ]; then
 	usage
+	exit 1
 fi
 
 if [ ! -f PKGBUILD ]; then
@@ -42,5 +92,5 @@ for i in *; do
 done
 
 tar czf $pkgname-$pkgver-$pkgrel.src.tar.gz $files
-uploadPkgbuild.py $1 $2 $3 $4 $5 $pkgname $pkgver $pkgrel $pkgname-$pkgver-$pkgrel.src.tar.gz
+uploadPkgbuild.py "$URL" "$USERNAME" "$PASSWORD" "$PRIORITY" "$CONFIG" $pkgname $pkgver $pkgrel $pkgname-$pkgver-$pkgrel.src.tar.gz
 rm $pkgname-$pkgver-$pkgrel.src.tar.gz

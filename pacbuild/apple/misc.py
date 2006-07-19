@@ -42,7 +42,7 @@ class Builder(SQLObject):
 
 class PacmanConf(SQLObject):
 	name = StringCol(alternateID=True)
-	data = BLOBCol()
+	data = StringCol()
 
 	def md5sum(self):
 		return md5(self.data).hexdigest()

@@ -190,6 +190,8 @@ class Waka(threading.Thread):
 		else:
 			binary = False
 		log = open(self.logFile).read()
+		if ">>>>>>>>>> Error building <<<<<<<<<<" in log:
+			syslog(LOG_ERR, "Found error in log building %s"%(self.build.sourceFilename))
 		sendBuild(self.build, binary, log)
 		shutil.rmtree(self.buildDir)
 

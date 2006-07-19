@@ -307,14 +307,18 @@ def _main(argv=None):
 
 	# Start any builds that never actually finished last time
 	for i in Build.select():
-		if not os.path.isdir(os.path.join(strawberryConfig['buildDir'], i.sourceFilename)):
-			otherargs = {}
-			if strawberryConfig.has_key('chrootImage'):
-				otherargs['chrootImage'] = strawberryConfig['chrootImage']
-			syslog(LOG_INFO, "Resuming unfinished build - %s"%(i.sourceFilename))
-			waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'], **otherargs)
-			waka.start()
-			threads.append(waka)
+		# Clean up any half-built versions
+		# We're starting fresh, after all
+		if os.path.isdir(os.path.join(strawberryConfig['buildDir'], i.sourceFilename)):
+			shutil.rmtree(os.path.join(strawberryConfig['buildDir'], i.sourceFilename))
+
+		otherargs = {}
+		if strawberryConfig.has_key('chrootImage'):
+			otherargs['chrootImage'] = strawberryConfig['chrootImage']
+		syslog(LOG_INFO, "Resuming unfinished build - %s"%(i.sourceFilename))
+		waka = Waka(i, os.path.join(strawberryConfig['buildDir'], i.sourceFilename), strawberryConfig['currentUrl'], strawberryConfig['extraUrl'], **otherargs)
+		waka.start()
+		threads.append(waka)
 
 	while not done:
 		for i, v in enumerate(threads):

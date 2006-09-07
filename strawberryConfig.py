@@ -21,6 +21,10 @@ from sqlobject import *
 from socket import gethostname
 import os, os.path
 
+import platform
+
+arch = platform.machine()
+
 user = ''
 password = ''
 url = 'http://localhost:8888'

@@ -52,8 +52,18 @@ class Builder(SQLObject):
 		return builder
 
 class PacmanConf(SQLObject):
-	name = StringCol(alternateID=True)
+	name = StringCol()
 	data = StringCol()
+	arch = ForeignKey('Arch')
+
+	@classmethod
+	def getConf(cls, name, arch):
+		confs = cls.select(AND(cls.q.name==name, cls.q.archID==arch.id))
+		confs = confs[:1]
+		conf = None
+		for c in confs:
+			conf = c
+		return conf
 
 	def md5sum(self):
 		return md5(self.data).hexdigest()

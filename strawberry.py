@@ -100,8 +100,9 @@ def createDaemon():
 	return(0)
 
 class PacmanConf:
-	def __init__(self, name, data):
+	def __init__(self, name, arch, data):
 		self.name = name
+		self.arch = arch
 		self.data = data
 	def md5sum(self):
 		return md5(self.data).hexdigest()
@@ -156,7 +157,7 @@ class Waka(threading.Thread):
 		conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
 		conf.write('DEFAULT_KERNEL=kernel26\n')
 		conf.close()
-		thisconf = getPacmanConfig(self.build.pacmanConfig, self.build.pacmanConfigMd5)
+		thisconf = getPacmanConfig(self.build.pacmanConfig, strawberryConfig['arch'], self.build.pacmanConfigMd5)
 		if not thisconf:
 			syslog(LOG_ERR, "Don't have pacman.conf for %s, using mkchroot defaults"%(self.filename))
 			self.pacmanconfPath = ""
@@ -212,19 +213,19 @@ class Heartbeat(threading.Thread):
 def canBuild():
 	return Build.select().count() < strawberryConfig['maxBuilds']
 
-def getPacmanConfig(name, md5):
+def getPacmanConfig(name, arch, md5):
 	global pacmanConfigs
 	for i in pacmanConfigs:
-		if (i.name == name and i.md5sum() == md5):
+		if i.name == name and i.arch == arch and i.md5sum() == md5:
 			return i
 	server = xmlrpclib.ServerProxy(strawberryConfig['url'])
 	try:
-		config = server.getPacmanConfig(strawberryConfig['user'], strawberryConfig['password'], name)
+		config = server.getPacmanConfig(strawberryConfig['user'], strawberryConfig['password'], arch, name)
 		if config is not None and config is not False:
 			for i in pacmanConfigs:
-				if (i.name == name):
+				if i.name == name and i.arch == arch:
 					pacmanConfigs.remove(i)
-			config = PacmanConf(config[0], config[1])
+			config = PacmanConf(config[0], config[1], config[2])
 			pacmanConfigs.append(config)
 			syslog(LOG_INFO, "Got pacman config \"%s\" from %s"%(name, strawberryConfig['url']))
 			return config

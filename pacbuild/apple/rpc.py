@@ -70,11 +70,11 @@ class RPCDaemon:
 		user = authUser(user, password)
 		if not user or user.type != 'submitter':
 			return False
+		arch = Arch.byName(arch)
 		try:
-			pconf = PacmanConf.byName(pacmanconfig)
+			pconf = PacmanConf.getConf(pacmanconfig, arch)
 		except:
 			return False
-		arch = Arch.byName(arch)
 		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=arch, priority=priority, pacmanconf=pconf)
 		build.source = source.decode('base64')
 		return build.id
@@ -103,13 +103,14 @@ class RPCDaemon:
 		j.lastBeat = datetime.now()
 		return True
 
-	def getPacmanConfig(self, user, password, name):
+	def getPacmanConfig(self, user, password, arch, name):
 		user = authUser(user, password)
 		if not user:
 			return False
+		arch = Arch.byName(arch)
 		try:
-			conf = PacmanConf.byName(name)
-			return (conf.name, conf.data)
+			conf = PacmanConf.getConf(name, arch)
+			return (conf.name, conf.arch.name, conf.data)
 		except:
 			return False
 

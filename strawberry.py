@@ -203,7 +203,7 @@ class Heartbeat(threading.Thread):
 		while True:
 			try:
 				server = xmlrpclib.ServerProxy(strawberryConfig['url'])
-				server.beat(strawberryConfig['user'], strawberryConfig['password'], strawberryConfig['ident'])
+				server.beat(strawberryConfig['user'], strawberryConfig['password'], strawberryConfig['ident'], strawberryConfig['arch'])
 			except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
 				syslog(LOG_ERR, "Unable to send heartbeat")
 				pass
@@ -237,7 +237,7 @@ def getPacmanConfig(name, md5):
 def getNextBuild():
 	try:
 		server = xmlrpclib.ServerProxy(strawberryConfig['url'])
-		build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'])
+		build = server.getNextBuild(strawberryConfig['user'], strawberryConfig['password'], strawberryConfig['ident'], strawberryConfig['arch'])
 		if build is not None and build is not False:
 			syslog(LOG_INFO, "Got %s from %s for next build"%(build[1], strawberryConfig['url']))
 			return Build(cherryId=build[0], sourceFilename=build[1], source=build[2].decode('base64'),

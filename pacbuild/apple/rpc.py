@@ -21,7 +21,7 @@
 import SimpleXMLRPCServer
 import SocketServer
 import package
-from misc import Builder, PacmanConf
+from misc import Builder, PacmanConf, Arch
 from pacbuild.apple import authUser
 import select
 from sqlobject import *
@@ -33,11 +33,13 @@ class RPCDaemon:
 	def __init__(self):
 		self.sessions = []
 		
-	def getNextBuild(self, user, password):
+	def getNextBuild(self, user, password, ident, arch):
 		user = authUser(user, password)
+		arch = Arch.byName(arch)
+		builder = Builder.getBuilder(user, ident, arch)
 		if not user:
 			return False
-		nextBuild = package.getNextBuild(user.arch)
+		nextBuild = package.getNextBuild(builder.arch)
 		if nextBuild == None:
 			return False
 		nextBuild.build(user)
@@ -64,7 +66,7 @@ class RPCDaemon:
 		build.finish(data, log)
 		return True
 
-	def submitPKGBUILD(self, user, password, name, pkgver, pkgrel, priority, pacmanconfig, source):
+	def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
 		user = authUser(user, password)
 		if not user or user.type != 'submitter':
 			return False
@@ -72,7 +74,8 @@ class RPCDaemon:
 			pconf = PacmanConf.byName(pacmanconfig)
 		except:
 			return False
-		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=user.arch, priority=priority, pacmanconf=pconf)
+		arch = Arch.byName(arch)
+		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=arch, priority=priority, pacmanconf=pconf)
 		build.source = source.decode('base64')
 		return build.id
 
@@ -91,15 +94,13 @@ class RPCDaemon:
 			log = ''
 		return ("%s-%s-%s.pkg.tar.gz" % (build.name, build.pkgver, build.pkgrel), binary, log)
 	
-	def beat(self, user, password, ident):
+	def beat(self, user, password, ident, arch):
 		user = authUser(user, password)
 		if not user:
 			return False
-		j = list(Builder.select(AND(Builder.q.userID == user.id, Builder.q.ident == ident)))
-		if not j:
-			j = Builder(user=user, ident=ident)
-			return True
-		j[0].lastBeat = datetime.now()
+		arch = Arch.byName(arch)
+		j = Builder.getBuilder(user, ident, arch)
+		j.lastBeat = datetime.now()
 		return True
 
 	def getPacmanConfig(self, user, password, name):

@@ -25,20 +25,31 @@ from md5 import md5
 class Arch(SQLObject):
 	name = StringCol(alternateID=True)
 	packageArchs = MultipleJoin('Package')
-	users = MultipleJoin('User')
+	builders = MultipleJoin('Builder')
 
 class User(SQLObject):
 	name = StringCol(alternateID=True)
 	password = StringCol()
 	email = StringCol()
-	arch = ForeignKey('Arch')
 	packages = MultipleJoin('Package')
 	type = EnumCol(enumValues=('builder', 'submitter'))
 
 class Builder(SQLObject):
 	user = ForeignKey('User')
 	ident = StringCol()
+	arch = ForeignKey('Arch')
 	lastBeat = DateTimeCol(default=datetime.now)
+
+	@classmethod
+	def getBuilder(cls, user, ident, arch):
+		builders = cls.select(AND(Builder.q.userID == user.id, Builder.q.ident == ident, Builder.q.archID == arch.id))
+		builders = builders[:1]
+		builder = None
+		for b in builders:
+			builder = b
+		if builder == None:
+			builder = cls(user=user, ident=ident, arch=arch, lastBeat=datetime.now())
+		return builder
 
 class PacmanConf(SQLObject):
 	name = StringCol(alternateID=True)

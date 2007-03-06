@@ -31,15 +31,16 @@ def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	if len(argv) != 10:
-		print "usage: %s <server> <user> <password> <priority> <pacman config> <name> <pkgver> <pkgrel> <source>" % argv[0]
+	if len(argv) != 11:
+		print "usage: %s <server> <user> <password> <arch> <priority> <pacman config> <name> <pkgver> <pkgrel> <source>" % argv[0]
 		return 1
 
-	binary = open(argv[9], "rb")
+	binary = open(argv[10], "rb")
 	bin = binary.read().encode('base64')
 
 	server = xmlrpclib.ServerProxy(argv[1])
-	print server.submitPKGBUILD(argv[2], argv[3], argv[6], argv[7], argv[8], int(argv[4]), argv[5], bin)
+	# def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
+	print server.submitPKGBUILD(argv[2], argv[3], argv[4], argv[7], argv[8], argv[9], int(argv[5]), argv[6], bin)
 
 if __name__ == "__main__":
 	sys.exit(_main())

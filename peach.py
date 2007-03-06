@@ -148,7 +148,7 @@ def pacConf_list():
 <body>
 '''
 	for i in misc.PacmanConf.select():
-		print "<a href='?action=pacmanconfig&id=%s'>%s</a><br />"%(i.id, i.name)
+		print "<a href='?action=pacmanconfig&id=%s'>%s</a> (%s)<br />"%(i.id, i.name, i.arch.name)
 	print "</body></html>"
 
 def pacman_config(id=0):

@@ -28,7 +28,7 @@ import re
 connect(appleConfig.database)
 package.packagedir = appleConfig.Packagedir
 
-def job_list(all=False):
+def job_list(all=False, archid=None):
 	print '''Content-type: text/html
 
 <html>
@@ -52,7 +52,7 @@ def job_list(all=False):
 </style>
 </head>
 <body>
-<a href='?action=builders'>Build Machines</a> <a href='?action=conflist'>Pacman Configurations</a><br>
+<a href='?action=arches'>Architectures</a> <a href='?action=builders'>Build Machines</a> <a href='?action=conflist'>Pacman Configurations</a><br>
 '''
 	if all:
 		print '<a href="?">Most recent 20 builds</a>'
@@ -66,10 +66,13 @@ def job_list(all=False):
 </tr>
 '''
 	
+	where = None
+	if archid != None:
+		where = package.Package.q.archID == int(archid)
 	if all:
-		packages = package.Package.select(orderBy="-timestamp")
+		packages = package.Package.select(where, orderBy="-timestamp")
 	else:
-		packages = package.Package.select(orderBy="-timestamp")[:20]
+		packages = package.Package.select(where, orderBy="-timestamp")[:20]
 
 	for i in packages:
 		print "<tr class='%s'>" % i.status
@@ -101,6 +104,23 @@ def pkg_file(id=0):
 	print "Content-Disposition: attachment; filename=\""+pkg.name+"-"+pkg.pkgver+"-"+pkg.pkgrel+".pkg.tar.gz\"\n"
 	sys.stdout.write(pkg.binary)
 
+def arch_list():
+	print '''Content-type: text/html
+
+<html>
+<head>
+<title>Apple Status - Architectures</title>
+</head>
+<body>
+<table cellpadding='5px' cellspacing='0px'>
+<tr>
+	<th>Architecture</th>
+</tr>
+'''
+	for i in misc.Arch.select():
+		print "<tr><td><a href='?action=list&arch=%s'>%s</a></td></tr>"%(i.id, i.name)
+	print "</table></body></html>"
+	
 def builder_list():
 	print '''Content-type: text/html
 
@@ -111,11 +131,11 @@ def builder_list():
 <body>
 <table cellpadding='5px' cellspacing='0px'>
 <tr>
-	<th>Owner</th><th>Identifier</th>
+	<th>Owner</th><th>Identifier</th><th>Architecture</th>
 </tr>
 '''
 	for i in misc.Builder.select():
-		print "<tr><td>%s</td><td>%s</td></tr>"%(i.user.name, i.ident)
+		print "<tr><td>%s</td><td>%s</td><td>%s</td></tr>"%(i.user.name, i.ident, i.arch.name)
 	print "</table></body></html>"
 	
 def pacConf_list():
@@ -137,23 +157,27 @@ def pacman_config(id=0):
 
 def main():
 	form = cgi.FieldStorage()
-	if (form.has_key("action") and form.has_key("id")):
-		if (form["action"].value == "log"):
+	if form.has_key("action") and form.has_key("id"):
+		if form["action"].value == "log":
 			pkg_log(form["id"].value)
-		elif (form["action"].value == "colorlog"):
+		elif form["action"].value == "colorlog":
 			pkg_colorlog(form["id"].value)
-		elif (form["action"].value == "pkg"):
+		elif form["action"].value == "pkg":
 			pkg_file(form["id"].value)
-		elif (form["action"].value == "pacmanconfig"):
+		elif form["action"].value == "pacmanconfig":
 			pacman_config(form["id"].value)
 		else:
 			job_list()
-	elif (form.has_key("action") and form["action"].value == "builders"):
+	elif form.has_key("action") and form["action"].value == "arches":
+		arch_list()
+	elif form.has_key("action") and form["action"].value == "builders":
 		builder_list()
-	elif (form.has_key("action") and form["action"].value == "conflist"):
+	elif form.has_key("action") and form["action"].value == "conflist":
 		pacConf_list()
-	elif (form.has_key("action") and form["action"].value == "all"):
+	elif form.has_key("action") and form["action"].value == "all":
 		job_list(all=True)
+	elif form.has_key("action") and form["action"].value == "list" and form.has_key("arch"):
+		job_list(all=True, archid=form['arch'].value)
 	else:
 		job_list()
 

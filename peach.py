@@ -28,7 +28,7 @@ import re
 connect(appleConfig.database)
 package.packagedir = appleConfig.Packagedir
 
-def job_list():
+def job_list(all=False):
 	print '''Content-type: text/html
 
 <html>
@@ -52,15 +52,26 @@ def job_list():
 </style>
 </head>
 <body>
-<a href='?action=builders'>Build Machines</a> <a href='?action=conflist'>Pacman Configurations</a>
-<hr />
+<a href='?action=builders'>Build Machines</a> <a href='?action=conflist'>Pacman Configurations</a><br>
+'''
+	if all:
+		print '<a href="?">Most recent 20 builds</a>'
+	else:
+		print '<a href="?action=all">All builds</a>'
+
+	print '''<hr />
 <table cellpadding='5px' cellspacing='0px'>
 <tr>
 	<th>Package</th><th>Arch</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
 </tr>
 '''
 	
-	for i in package.Package.select():
+	if all:
+		packages = package.Package.select(orderBy="-timestamp")
+	else:
+		packages = package.Package.select(orderBy="-timestamp")[:20]
+
+	for i in packages:
 		print "<tr class='%s'>" % i.status
 		print "<td>%s-%s-%s</td><td>%s</td><td>%s</td>"%(i.name,i.pkgver,i.pkgrel,i.arch.name,i.status)
 		print "<td><a href='?action=log&id=%s'>Log</a></td>"%(i.id)
@@ -141,6 +152,8 @@ def main():
 		builder_list()
 	elif (form.has_key("action") and form["action"].value == "conflist"):
 		pacConf_list()
+	elif (form.has_key("action") and form["action"].value == "all"):
+		job_list(all=True)
 	else:
 		job_list()
 

@@ -90,13 +90,20 @@ def colorize(st):
 		s = re.sub(i, j, s)
 	return s
 
+def strip_colors(st):
+	s = st[:]
+	subs = [('\[1;32m', ""), ('\[1;0m', ""), ('\[1;1m', ""), ('\[1;33m', ""), ("\[1;31m", "")]
+	for i, j in subs:
+		s = re.sub(i, j, s)
+	return s
+
 def pkg_colorlog(id=0):
 	print "Content-type: text/html\n"
 	print "<pre>" + colorize(package.Package.get(id).log) + "</pre>"
 
 def pkg_log(id=0):
 	print "Content-type: text/plain\n"
-	print package.Package.get(id).log
+	print strip_colors(package.Package.get(id).log)
 
 def pkg_file(id=0):
 	pkg = package.Package.get(id)

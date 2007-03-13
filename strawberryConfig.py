@@ -27,6 +27,12 @@ arch = platform.machine()
 
 user = ''
 password = ''
+
+import md5
+md5obj = md5.new()
+md5obj.update(password)
+password = md5obj.hexdigest()
+
 url = 'http://localhost:8888'
 # Each of your build machines should have a unique ident
 # Defaults to hostname

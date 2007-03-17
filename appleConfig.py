@@ -24,6 +24,8 @@ DBdir = '/var/lib/pacbuild'
 Packagedir = '/var/lib/pacbuild/apple'
 if not os.path.isdir(DBdir):
 	os.makedirs(DBdir)
+if not os.path.isdir(Packagedir):
+	os.makedirs(Packagedir)
 database = connectionForURI("sqlite://%s/apple.db"%DBdir)
 
 stalePackageTimeout = datetime.timedelta(days=2)

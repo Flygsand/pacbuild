@@ -1,0 +1,42 @@
+These are just quick notes about setting up an apple daemon.
+
+After starting apple.py, it will create /var/lib/pacbuild/{apple,apple.db}.  apple.db is a sqlite3 database.
+
+You'll probably want some initial data in there, so sqlite3 /var/lib/pacbuild/apple.db and execute these commands:
+
+insert into arch (name) values ('i686');
+insert into arch (name) values ('x86_64');
+
+insert into user (name, password, email, type) values ('a', '0cc175b9c0f1b6a831c399e269772661', 'a@ab.com', 'submitter');
+
+insert into pacman_conf (name, data, arch_id) values ('current', '[current]
+Server = ftp://ftp.archlinux.org/current/os/i686
+
+[extra]
+Server = ftp://ftp.archlinux.org/extra/os/i686
+', 1);
+insert into pacman_conf (name, data, arch_id) values ('testing', '[testing]
+Server = ftp://ftp.archlinux.org/testing/os/i686
+
+[current]
+Server = ftp://ftp.archlinux.org/current/os/i686
+
+[extra]
+Server = ftp://ftp.archlinux.org/extra/os/i686
+', 1);
+
+insert into pacman_conf (name, data, arch_id) values ('current', '[current]
+Server = ftp://ftp.archlinux.org/current/os/x86_64
+
+[extra]
+Server = ftp://ftp.archlinux.org/extra/os/x86_64
+', 2);
+insert into pacman_conf (name, data, arch_id) values ('testing', '[testing]
+Server = ftp://ftp.archlinux.org/testing/os/x86_64
+
+[current]
+Server = ftp://ftp.archlinux.org/current/os/x86_64
+
+[extra]
+Server = ftp://ftp.archlinux.org/extra/os/x86_64
+', 2);

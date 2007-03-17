@@ -24,6 +24,7 @@ import threading
 import os, os.path
 import re
 import time
+import md5
 
 from sqlobject import *
 
@@ -39,8 +40,14 @@ def _main(argv=None):
 	bin = binary.read().encode('base64')
 
 	server = xmlrpclib.ServerProxy(argv[1])
+
+	password = argv[3]
+	hsh = md5.md5()
+	hsh.update(password)
+	password = hsh.hexdigest()
+
 	# def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
-	print server.submitPKGBUILD(argv[2], argv[3], argv[4], argv[7], argv[8], argv[9], int(argv[5]), argv[6], bin)
+	print server.submitPKGBUILD(argv[2], password, argv[4], argv[7], argv[8], argv[9], int(argv[5]), argv[6], bin)
 
 if __name__ == "__main__":
 	sys.exit(_main())

@@ -10,7 +10,7 @@ cat > $HOME/.queuepackage.conf << EOF
 username=""
 password=""
 
-url=""
+url="http://localhost:8888"
 
 defaultpriority=1
 

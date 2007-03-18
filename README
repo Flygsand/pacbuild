@@ -1,13 +1,19 @@
 These are just quick notes about setting up an apple daemon.
 
-After starting apple.py, it will create /var/lib/pacbuild/{apple,apple.db}.  apple.db is a sqlite3 database.
+After starting apple.py, it will create /var/lib/pacbuild/{apple,apple.db}.
+apple.db is a sqlite3 database.
 
-You'll probably want some initial data in there, so sqlite3 /var/lib/pacbuild/apple.db and execute these commands:
+You'll probably want some initial data in there, so sqlite3
+/var/lib/pacbuild/apple.db and execute these commands:
 
 insert into arch (name) values ('i686');
 insert into arch (name) values ('x86_64');
 
 insert into user (name, password, email, type) values ('a', '0cc175b9c0f1b6a831c399e269772661', 'a@ab.com', 'submitter');
+
+Note: the password in the table is an md5sum of the orignal password text. the
+      simplest way to calculate this is the following:
+       echo -n "password" | md5sum
 
 insert into pacman_conf (name, data, arch_id) values ('current', '[current]
 Server = ftp://ftp.archlinux.org/current/os/i686
@@ -41,5 +47,3 @@ Server = ftp://ftp.archlinux.org/current/os/x86_64
 Server = ftp://ftp.archlinux.org/extra/os/x86_64
 ', 2);
 
-
-To generate a password for the user table execute: echo -n "<password>" | md5sum

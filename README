@@ -42,4 +42,4 @@ Server = ftp://ftp.archlinux.org/extra/os/x86_64
 ', 2);
 
 
-To generate a password for the user table execute: python -c 'import md5; a = md5.md5(); a.update("<password>"); print a.hexdigest()'
+To generate a password for the user table execute: echo -n "<password>" | md5sum

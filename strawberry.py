@@ -25,10 +25,11 @@ import socket
 import threading
 import os, os.path
 import re
-import datetime
-import time
+import datetime, time
 import shutil
-import getopt
+# next two imports are for OptionParser
+from copy import copy
+from optparse import Option, OptionValueError, OptionParser
 from syslog import *
 from md5 import md5
 
@@ -265,32 +266,47 @@ def sendBuild(build, binary, log):
 def mkchroot(imgpath):
 	os.system("/usr/bin/mkchroot -c %s" % imgpath)
 
-def usage():
-	print "usage: strawberry.py [options]"
-	print "options:"
-	print "       -c <config>     : use a different config than the default (%s)" % defaultConfig
-	print "       -d              : run as a daemon"
-	sys.exit(2)
+def check_filename(option, opt, value):
+	if os.path.isfile(value):
+	    return os.path.abspath(value)
+	else:
+		raise OptionValueError("option %s: invalid filename" % opt)
+
+class ExtendOption(Option):
+	TYPES = Option.TYPES + ("filename",)
+	TYPE_CHECKER = copy(Option.TYPE_CHECKER)
+	TYPE_CHECKER["filename"] = check_filename
+
+def createOptParser():
+	usage = "usage: %prog [options]"
+	description = "<fill in description here>"
+	parser = OptionParser(usage = usage, description = description,
+	                      option_class = ExtendOption)
+
+	parser.add_option("-c", "--config", action = "store", type = "filename",
+	                  dest = "config", default = defaultConfig,
+	                  help = "use a different config than default (%s)" % defaultConfig)
+	parser.add_option("-d", "--daemon", action = "store_true",
+	                  dest = "daemon", default = False,
+	                  help = "run as a daemon")
+	return parser
+
 
 def _main(argv=None):
 	if argv is None:
 		argv = sys.argv
 
-	try:
-		optlist, args = getopt.getopt(argv[1:], "c:d")
-	except getopt.GetoptError:
-		usage()
+	# instantiate parser object and set it loose
+	parser = createOptParser()
+	(opts, args) = parser.parse_args()
 
-	configPath = defaultConfig
-	for i, k in optlist:
-		if i == '-c':
-			if os.path.isfile(k):
-				configPath = k
-		if i == "-d":
-			createDaemon()
-			pid = open('/var/run/strawberry.pid', 'w')
-			pid.write('%s\n' % os.getpid())
-			pid.close()
+	# use results of parse_args to set things up
+	configPath = opts.config
+	if opts.daemon:
+		createDaemon()
+		pid = open('/var/run/strawberry.pid', 'w')
+		pid.write('%s\n' % os.getpid())
+		pid.close()
 
 	openlog("strawberry", LOG_PID, LOG_USER)
 	syslog(LOG_INFO, "Started strawberry")

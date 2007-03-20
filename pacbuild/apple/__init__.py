@@ -1,5 +1,5 @@
 # 
-# pacbuild - cherry module
+# pacbuild - apple module
 # Copyright (C) 2005 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify

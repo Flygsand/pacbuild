@@ -69,15 +69,15 @@ class RPCDaemon:
 	def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
 		user = authUser(user, password)
 		if not user or user.type != 'submitter':
-			return False
+			return 'User is not authorized'
 		arch = Arch.byName(arch)
 		try:
 			pconf = PacmanConf.getConf(pacmanconfig, arch)
 		except:
-			return False
+			return "Invalid or unknown build config, '%s'" % pacmanconfig
 		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=arch, priority=priority, pacmanconf=pconf)
 		build.source = source.decode('base64')
-		return build.id
+		return 'Build queued with id=%s' % build.id
 
 	def getPackage(self, user, password, id):
 		user = authUser(user, password)

@@ -70,10 +70,12 @@ class RPCDaemon:
 		user = authUser(user, password)
 		if not user or user.type != 'submitter':
 			return 'User is not authorized'
-		arch = Arch.byName(arch)
 		try:
-			pconf = PacmanConf.getConf(pacmanconfig, arch)
-		except:
+			arch = Arch.byName(arch)
+		except main.SQLObjectNotFound:
+			return "Invalid or unknown architecture, '%s'" % arch
+		pconf = PacmanConf.getConf(pacmanconfig, arch)
+		if pconf == None:
 			return "Invalid or unknown build config, '%s'" % pacmanconfig
 		build = package.Package(name=name, pkgver=pkgver, pkgrel=pkgrel, status='queued', timestamp=datetime.now(), arch=arch, priority=priority, pacmanconf=pconf)
 		build.source = source.decode('base64')

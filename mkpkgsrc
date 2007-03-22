@@ -1,0 +1,40 @@
+#!/bin/sh
+#TODO this should be moved to something like makepkg
+#   then we could run "makepkg --gensrc" from queuepkg
+myver="0.4"
+
+in_source() {
+	for j in ${source[@]}; do
+		if [ "$j" == "$1" ]; then
+			return 0
+		fi
+	done
+	if [ "$1" == "$install" ]; then
+		return 0
+	fi
+
+	return 1
+}
+
+if [ ! -f PKGBUILD ]; then
+	echo "Please execute $(basename $0) in the package's directory"
+	echo "Missing PKGBUILD"
+	exit 1
+fi
+
+source PKGBUILD
+
+files="PKGBUILD"
+
+for i in *; do
+	if [ "$i" != "CVS" -a "$i" != "PKGBUILD" ]; then
+		in_source $i
+		if [ $? -eq 0 ]; then
+			files="$files $i"
+		fi
+	fi
+done
+
+pkgsrc="$pkgname-$pkgver-$pkgrel.src.tar.gz"
+tar czf $pkgsrc $files
+echo "$pkgsrc"

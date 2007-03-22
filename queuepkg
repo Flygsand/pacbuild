@@ -1,0 +1,122 @@
+#!/usr/bin/env python
+#   queuepkg - queue a package on a remote apple instance
+# 
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+import os, os.path, sys, md5
+import xmlrpclib
+import commands
+
+from optparse import OptionParser
+from ConfigParser import SafeConfigParser #recommended
+
+VERSION="0.4"
+
+CONFIG = "~/.queuepkg.conf"
+DEFAULT_CONFIG_CONTENTS = """# ~/.queuepkg.conf
+# additional named sections may be added
+# values are inherited from 'default'
+[default]
+username = changeme
+password = xxxxx
+url = http://localhost:8888
+priority = 1
+configuration = current
+arch = i686
+
+[testing]
+configuration = testing
+
+#[example]
+#priority = 5
+
+#[example2]
+#url = http://wooohooo:12345/
+"""
+
+def load_config():
+    f = os.path.expanduser(CONFIG)
+    if os.path.exists(f):
+        cfg = SafeConfigParser()
+        cfg.read(f)
+        return cfg
+    else:
+        print "creating default config '%s'" % CONFIG
+        f = open(f, 'w')
+        f.write(DEFAULT_CONFIG_CONTENTS)
+        f.close()
+        print "please configure this file and re-run queuepkg"
+        sys.exit(0)
+
+def cfgopt(cfg, section, setting):
+    if cfg.has_option(section, setting):
+        return cfg.get(section, setting)
+    elif cfg.has_option('default', setting):
+        return cfg.get('default', setting)
+    else:
+        print "Setting '%s' not found for section '%s'" % (setting, section)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    usage = "usage: %prog [options]"
+    description = "send package build information to a remote apple instance"
+    p = OptionParser(usage=usage,description=description)
+    p.add_option('-n', '--named-config', dest='section', default='default',\
+            help='a named configuration in the config file %s' % CONFIG)
+    p.add_option('-p', '--priority', type="int", help='the build priority for this package')
+
+    (opt, args) = p.parse_args()
+
+    cfg = load_config()
+    if not cfg.has_section('default'):
+        print "Configuration section 'default' is undefined."
+        print "  %s is misconfigured.  It is recommended to move it" % CONFIG
+        print "  away and let queuepkg regenerate the file"
+        sys.exit(1)
+
+    section = opt.section
+    if section == None or not cfg.has_section(section):
+        print "Configuration file has no section '%s', aborting" % section
+        sys.exit(1)
+
+    usernm = cfgopt(cfg, section, 'username')
+    passwd = cfgopt(cfg, section, 'password')
+    passwd = md5.md5(passwd).digest().encode('hex')
+
+    url = cfgopt(cfg, section, 'url') 
+    arch = cfgopt(cfg, section, 'arch')
+    priority = cfgopt(cfg, section, 'priority')
+    config = cfgopt(cfg, section, 'configuration')
+
+    # this one makes sense at the cmd line for isnta-build
+    if opt.priority != None: priority = opt.priority
+
+    srcfile = commands.getoutput('mkpkgsrc')
+    pkgsrc = open(srcfile, "rb")
+    output = pkgsrc.read().encode('base64')
+    os.unlink(srcfile)
+
+    #split srcfile name for package variables
+    vars = srcfile.split('-')
+    pkgrel = vars[-1].split('.')[0]
+    pkgver = vars[-2]
+    pkgname = '-'.join(vars[:-2])
+
+    server = xmlrpclib.ServerProxy(url)
+
+    # def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
+    print server.submitPKGBUILD(usernm, passwd, arch, \
+            pkgname, pkgver, pkgrel, \
+            int(priority), config, output)

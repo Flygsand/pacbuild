@@ -70,12 +70,14 @@ def cfgopt(cfg, section, setting):
 		sys.exit(1)
 
 if __name__ == "__main__":
-	usage = "usage: %prog [options]"
-	description = "send package build information to a remote apple instance"
+	usage = "Usage: %prog [options]"
+	description = "Send package build information to a remote apple instance"
 	p = OptionParser(usage=usage,description=description)
 	p.add_option('-n', '--named-config', dest='section', default='default',\
 	             help='a named configuration in the config file %s' % CONFIG)
 	p.add_option('-p', '--priority', type="int", help='the build priority for this package')
+	p.add_option('-c', '--config', type="string", help='the pacman config to build this package with')
+	p.add_option('-a', '--arch', type="string", help='the architecture to build this package on')
 
 	(opt, args) = p.parse_args()
 
@@ -100,8 +102,10 @@ if __name__ == "__main__":
 	priority = cfgopt(cfg, section, 'priority')
 	config = cfgopt(cfg, section, 'configuration')
 
-	# this one makes sense at the cmd line for isnta-build
+	# these ones makes sense at the cmd line for isnta-build
+	if opt.arch != None: arch = opt.arch
 	if opt.priority != None: priority = opt.priority
+	if opt.config != None: config = opt.config
 
 	status, srcfile = commands.getstatusoutput('mkpkgsrc')
 	if status != 0:

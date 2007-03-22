@@ -47,76 +47,76 @@ configuration = testing
 """
 
 def load_config():
-    f = os.path.expanduser(CONFIG)
-    if os.path.exists(f):
-        cfg = SafeConfigParser()
-        cfg.read(f)
-        return cfg
-    else:
-        print "creating default config '%s'" % CONFIG
-        f = open(f, 'w')
-        f.write(DEFAULT_CONFIG_CONTENTS)
-        f.close()
-        print "please configure this file and re-run queuepkg"
-        sys.exit(0)
+	f = os.path.expanduser(CONFIG)
+	if os.path.exists(f):
+		cfg = SafeConfigParser()
+		cfg.read(f)
+		return cfg
+	else:
+		print "creating default config '%s'" % CONFIG
+		f = open(f, 'w')
+		f.write(DEFAULT_CONFIG_CONTENTS)
+		f.close()
+		print "please configure this file and re-run queuepkg"
+		sys.exit(0)
 
 def cfgopt(cfg, section, setting):
-    if cfg.has_option(section, setting):
-        return cfg.get(section, setting)
-    elif cfg.has_option('default', setting):
-        return cfg.get('default', setting)
-    else:
-        print "Setting '%s' not found for section '%s'" % (setting, section)
-        sys.exit(1)
+	if cfg.has_option(section, setting):
+		return cfg.get(section, setting)
+	elif cfg.has_option('default', setting):
+		return cfg.get('default', setting)
+	else:
+		print "Setting '%s' not found for section '%s'" % (setting, section)
+		sys.exit(1)
 
 if __name__ == "__main__":
-    usage = "usage: %prog [options]"
-    description = "send package build information to a remote apple instance"
-    p = OptionParser(usage=usage,description=description)
-    p.add_option('-n', '--named-config', dest='section', default='default',\
-            help='a named configuration in the config file %s' % CONFIG)
-    p.add_option('-p', '--priority', type="int", help='the build priority for this package')
+	usage = "usage: %prog [options]"
+	description = "send package build information to a remote apple instance"
+	p = OptionParser(usage=usage,description=description)
+	p.add_option('-n', '--named-config', dest='section', default='default',\
+	             help='a named configuration in the config file %s' % CONFIG)
+	p.add_option('-p', '--priority', type="int", help='the build priority for this package')
 
-    (opt, args) = p.parse_args()
+	(opt, args) = p.parse_args()
 
-    cfg = load_config()
-    if not cfg.has_section('default'):
-        print "Configuration section 'default' is undefined."
-        print "  %s is misconfigured.  It is recommended to move it" % CONFIG
-        print "  away and let queuepkg regenerate the file"
-        sys.exit(1)
+	cfg = load_config()
+	if not cfg.has_section('default'):
+		print "Configuration section 'default' is undefined."
+		print "  %s is misconfigured.  It is recommended to move it" % CONFIG
+		print "  away and let queuepkg regenerate the file"
+		sys.exit(1)
 
-    section = opt.section
-    if section == None or not cfg.has_section(section):
-        print "Configuration file has no section '%s', aborting" % section
-        sys.exit(1)
+	section = opt.section
+	if section == None or not cfg.has_section(section):
+		print "Configuration file has no section '%s', aborting" % section
+		sys.exit(1)
 
-    usernm = cfgopt(cfg, section, 'username')
-    passwd = cfgopt(cfg, section, 'password')
-    passwd = md5.md5(passwd).digest().encode('hex')
+	usernm = cfgopt(cfg, section, 'username')
+	passwd = cfgopt(cfg, section, 'password')
+	passwd = md5.md5(passwd).digest().encode('hex')
 
-    url = cfgopt(cfg, section, 'url') 
-    arch = cfgopt(cfg, section, 'arch')
-    priority = cfgopt(cfg, section, 'priority')
-    config = cfgopt(cfg, section, 'configuration')
+	url = cfgopt(cfg, section, 'url') 
+	arch = cfgopt(cfg, section, 'arch')
+	priority = cfgopt(cfg, section, 'priority')
+	config = cfgopt(cfg, section, 'configuration')
 
-    # this one makes sense at the cmd line for isnta-build
-    if opt.priority != None: priority = opt.priority
+	# this one makes sense at the cmd line for isnta-build
+	if opt.priority != None: priority = opt.priority
 
-    srcfile = commands.getoutput('mkpkgsrc')
-    pkgsrc = open(srcfile, "rb")
-    output = pkgsrc.read().encode('base64')
-    os.unlink(srcfile)
+	srcfile = commands.getoutput('mkpkgsrc')
+	pkgsrc = open(srcfile, "rb")
+	output = pkgsrc.read().encode('base64')
+	os.unlink(srcfile)
 
-    #split srcfile name for package variables
-    vars = srcfile.split('-')
-    pkgrel = vars[-1].split('.')[0]
-    pkgver = vars[-2]
-    pkgname = '-'.join(vars[:-2])
+	#split srcfile name for package variables
+	vars = srcfile.split('-')
+	pkgrel = vars[-1].split('.')[0]
+	pkgver = vars[-2]
+	pkgname = '-'.join(vars[:-2])
 
-    server = xmlrpclib.ServerProxy(url)
+	server = xmlrpclib.ServerProxy(url)
 
-    # def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
-    print server.submitPKGBUILD(usernm, passwd, arch, \
-            pkgname, pkgver, pkgrel, \
-            int(priority), config, output)
+	# def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
+	print server.submitPKGBUILD(usernm, passwd, arch, \
+	                            pkgname, pkgver, pkgrel, \
+	                            int(priority), config, output)

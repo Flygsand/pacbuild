@@ -103,7 +103,10 @@ if __name__ == "__main__":
 	# this one makes sense at the cmd line for isnta-build
 	if opt.priority != None: priority = opt.priority
 
-	srcfile = commands.getoutput('mkpkgsrc')
+	status, srcfile = commands.getstatusoutput('mkpkgsrc')
+	if status != 0:
+		print srcfile
+		sys.exit(status)
 	pkgsrc = open(srcfile, "rb")
 	output = pkgsrc.read().encode('base64')
 	os.unlink(srcfile)

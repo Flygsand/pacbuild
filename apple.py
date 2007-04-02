@@ -25,6 +25,7 @@ import ConfigParser
 from copy import copy
 from optparse import Option, OptionValueError, OptionParser
 from pacbuild.apple import connect, rpc, package, misc
+from sqlobject import *
 
 defaultConfig = "/etc/pacbuild/apple.conf"
 
@@ -86,9 +87,9 @@ def createDaemon():
 
 def check_filename(option, opt, value):
 	if os.path.isfile(value):
-	    return os.path.abspath(value)
+		return os.path.abspath(value)
 	else:
-		raise OptionValueError("option %s: invalid filename" % opt)
+		return None
 
 class ExtendOption(Option):
 	TYPES = Option.TYPES + ("filename",)
@@ -109,6 +110,13 @@ def createOptParser():
 	                  help = "run as a daemon")
 	return parser
 
+# check if a value can be cast to a number
+def isnumeric(val):
+	try:
+		dummy = float(val)
+		return True
+	except:
+		return False
 
 def _main(argv=None):
 	if argv is None:
@@ -119,11 +127,13 @@ def _main(argv=None):
 	(opts, args) = optparser.parse_args()
 
 	# use results of parse_args to set things up
-	configPath = opts.config
+	configpath = opts.config
+	if configpath == None:
+		raise StandardError("invalid config file specified")
 
 	# parse the config file
 	cfgparser = ConfigParser.ConfigParser()
-	cfgparser.read(configPath)
+	cfgparser.read(configpath)
 
 	# store values from config file
 	packagedir = cfgparser.get("options","packagedir")
@@ -132,13 +142,13 @@ def _main(argv=None):
 
 	# check the config file paths
 	if not os.path.isdir(packagedir):
-		raise StandardError("%s: invalid package directory %s" % configPath, packagedir)
+		raise StandardError("%s: invalid package directory %s" % (configpath, packagedir))
 	if not os.path.isdir(dbdir):
-		raise StandardError("%s: invalid database directory %s" % configPath, dbdir)
+		raise StandardError("%s: invalid database directory %s" % (configpath, dbdir))
 
 	# check that config file timeout is a number
-	if not pkgtimeout.isnumeric():
-		raise StandardError("%s: invalid timout value %s" % configPath, pkgtimeout)
+	if not isnumeric(pkgtimeout):
+		raise StandardError("%s: invalid timout value %s" % (configpath, pkgtimeout))
 
 	# if daemon option is set, fork the process
 	if opts.daemon:
@@ -148,6 +158,7 @@ def _main(argv=None):
 		pid.close()
 
 	# establish and connect to the database
+	#database = connectionForURI("sqlite://%s/apple.db?debug=t" % dbdir)
 	database = connectionForURI("sqlite://%s/apple.db" % dbdir)
 	connect(database)
 
@@ -158,7 +169,7 @@ def _main(argv=None):
 
 	try:
 		builderTimeout = datetime.timedelta(hours=1, minutes=5)
-		staleTimeout = datetime.timedelta(hours=pkgtimeout)
+		staleTimeout = datetime.timedelta(hours=float(pkgtimeout))
 		while True:
 			for i in package.getBuilds():
 				if i.isStale(staleTimeout):

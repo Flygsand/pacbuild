@@ -19,14 +19,21 @@
 # 
 
 import sys
+import os, os.path
 import cgi
 import re
 import ConfigParser
 from pacbuild.apple import connect, package, misc
+from sqlobject import *
+
+# default config file
+# TODO peach currently only works with the default config file
+defaultConfig = "/etc/pacbuild/apple.conf"
+configpath = defaultConfig
 
 # parse the config file
 cfgparser = ConfigParser.ConfigParser()
-cfgparser.read(configPath)
+cfgparser.read(configpath)
 
 # store values from config file
 packagedir = cfgparser.get("options","packagedir")
@@ -34,9 +41,9 @@ dbdir = cfgparser.get("options","dbdir")
 
 # check the config file paths
 if not os.path.isdir(packagedir):
-	raise StandardError("%s: invalid package directory %s" % configPath, packagedir)
+	raise StandardError("%s: invalid package directory %s" % (configpath, packagedir))
 if not os.path.isdir(dbdir):
-	raise StandardError("%s: invalid database directory %s" % configPath, dbdir)
+	raise StandardError("%s: invalid database directory %s" % (configpath, dbdir))
 
 # establish and connect to the database
 database = connectionForURI("sqlite://%s/apple.db" % dbdir)

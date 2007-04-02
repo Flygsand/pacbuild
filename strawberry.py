@@ -23,7 +23,9 @@ import xmlrpclib
 import socket
 import threading
 import os, os.path
+import platform
 import re
+import md5
 import datetime, time
 import shutil
 import ConfigParser
@@ -31,8 +33,6 @@ import ConfigParser
 from copy import copy
 from optparse import Option, OptionValueError, OptionParser
 from syslog import *
-from md5 import md5
-
 from sqlobject import *
 
 # set up some starting values
@@ -102,7 +102,7 @@ class PacmanConf:
 		self.arch = arch
 		self.data = data
 	def md5sum(self):
-		return md5(self.data).hexdigest()
+		return md5.new(self.data).hexdigest()
 
 class Build(SQLObject):
 	cherryId = IntCol()
@@ -126,7 +126,7 @@ class Waka(threading.Thread):
 	def __init__(self, build, buildDir, mirrorUrl, chrootImage=None, **other):
 		threading.Thread.__init__(self, *other)
 		self.buildDir = buildDir
-		self.mirrorUrlUrl = mirrorUrl
+		self.mirrorUrl = mirrorUrl
 		self.build = build
 		self.filename = build.sourceFilename
 		self.chrootImage = chrootImage
@@ -216,15 +216,15 @@ def getPacmanConfig(name, arch, md5):
 			return i
 	server = xmlrpclib.ServerProxy(config['url'])
 	try:
-		config = server.getPacmanConfig(config['user'], config['password'], arch, name)
-		if config is not None and config is not False:
+		pacconfig = server.getPacmanConfig(config['user'], config['password'], arch, name)
+		if pacconfig is not None and pacconfig is not False:
 			for i in pacmanConfigs:
 				if i.name == name and i.arch == arch:
 					pacmanConfigs.remove(i)
-			config = PacmanConf(config[0], config[1], config[2])
-			pacmanConfigs.append(config)
+			pacconfig = PacmanConf(pacconfig[0], pacconfig[1], pacconfig[2])
+			pacmanConfigs.append(pacconfig)
 			syslog(LOG_INFO, "Got pacman config \"%s\" from %s"%(name, config['url']))
-			return config
+			return pacconfig
 		return None
 	except (xmlrpclib.ProtocolError, xmlrpclib.Fault, socket.error):
 		syslog(LOG_ERR, "Failed to retrieve pacman config \"%s\" from %s"%(name, config['url']))
@@ -263,9 +263,9 @@ def mkchroot(confpath, imgpath):
 
 def check_filename(option, opt, value):
 	if os.path.isfile(value):
-	    return os.path.abspath(value)
+		return os.path.abspath(value)
 	else:
-		raise OptionValueError("option %s: invalid filename" % opt)
+		return None
 
 class ExtendOption(Option):
 	TYPES = Option.TYPES + ("filename",)
@@ -286,6 +286,14 @@ def createOptParser():
 	                  help = "run as a daemon")
 	return parser
 
+# check if a value can be cast to a number
+def isnumeric(val):
+	try:
+		dummy = float(val)
+		return True
+	except:
+		return False
+
 
 def _main(argv=None):
 	if argv is None:
@@ -296,26 +304,22 @@ def _main(argv=None):
 	(opts, args) = parser.parse_args()
 
 	# use results of parse_args to set things up
-	configPath = opts.config
-	if opts.daemon:
-		createDaemon()
-		pid = open('/var/run/strawberry.pid', 'w')
-		pid.write('%s\n' % os.getpid())
-		pid.close()
+	configpath = opts.config
+	if configpath == None:
+		raise StandardError("invalid config file specified")
 
 	openlog("strawberry", LOG_PID, LOG_USER)
 	syslog(LOG_INFO, "Started strawberry")
 
 	# parse the config file
 	cfgparser = ConfigParser.ConfigParser()
-	cfgparser.read(configPath)
+	cfgparser.read(configpath)
 
 	# store values from config file
 	dbdir = cfgparser.get("options","dbdir")
 	builddir = cfgparser.get("options","builddir")
 	user = cfgparser.get("options","user")
 	password = cfgparser.get("options","password")
-	ident = cfgparser.get("options","ident")
 	url = cfgparser.get("options","url")
 	maxbuilds = cfgparser.get("options","maxbuilds")
 	sleeptime = cfgparser.get("options","sleeptime")
@@ -323,19 +327,24 @@ def _main(argv=None):
 	chrootimage = cfgparser.get("options","chrootimage")
 	imagetimeout = cfgparser.get("options","imagetimeout")
 
+	# generate the md5 hashed password, this is a bit hacky
+	# wrt storing it back in the cfgparser opject
+	password = md5.new(password).hexdigest()
+	cfgparser.set("options","password", password)
+
 	# check the config file paths
 	if not os.path.isdir(builddir):
-		raise StandardError("%s: invalid package directory %s" % configPath, builddir)
+		raise StandardError("%s: invalid package directory %s" % (configpath, builddir))
 	if not os.path.isdir(dbdir):
-		raise StandardError("%s: invalid database directory %s" % configPath, dbdir)
+		raise StandardError("%s: invalid database directory %s" % (configpath, dbdir))
 
 	# check the numeric config values
-	if not maxbuilds.isnumeric():
-		raise StandardError("%s: invalid maxbuilds value %s" % configPath, maxbuilds)
-	if not sleeptime.isnumeric():
-		raise StandardError("%s: invalid sleeptime value %s" % configPath, sleeptime)
-	if not imagetimeout.isnumeric():
-		raise StandardError("%s: invalid imagetimeout value %s" % configPath, imagetimeout)
+	if not isnumeric(maxbuilds):
+		raise StandardError("%s: invalid maxbuilds value %s" % (configpath, maxbuilds))
+	if not isnumeric(sleeptime):
+		raise StandardError("%s: invalid sleeptime value %s" % (configpath, sleeptime))
+	if not isnumeric(imagetimeout):
+		raise StandardError("%s: invalid imagetimeout value %s" % (configpath, imagetimeout))
 
 	# set chroot image location if value was true
 	if chrootimage == "true":
@@ -344,6 +353,16 @@ def _main(argv=None):
 	# fill the config global dictionary
 	for i in cfgparser.items("options"):
 		config[i[0]] = i[1]
+	# add two more things that aren't in config file
+	config["arch"] = platform.machine()
+	config["ident"] = socket.gethostname()
+
+	# if daemon option is set, fork the process
+	if opts.daemon:
+		createDaemon()
+		pid = open('/var/run/strawberry.pid', 'w')
+		pid.write('%s\n' % os.getpid())
+		pid.close()
 
 	# establish and connect to the database
 	database = connectionForURI("sqlite://%s/strawberry.db" % dbdir)
@@ -385,8 +404,8 @@ def _main(argv=None):
 				conf.write('WAKA_ROOT_DIR="%s"\n' % builddir)
 				conf.write('WAKA_CHROOT_DIR="chroot"\n')
 				conf.write('QUIKINST_LOCATION="/usr/share/waka/quickinst"\n')
-				conf.write('PACKAGE_MIRROR_CURRENT="%s"\n' % (mirrorurl, "/extra/os/${CARCH}"))
-				conf.write('PACKAGE_MIRROR_EXTRA="%s"\n' % (mirrorurl, "/extra/os/${CARCH}"))
+				conf.write('PACKAGE_MIRROR_CURRENT="%s%s"\n' % (mirrorurl, "/current/os/${CARCH}"))
+				conf.write('PACKAGE_MIRROR_EXTRA="%s%s"\n' % (mirrorurl, "/extra/os/${CARCH}"))
 				conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
 				conf.write('DEFAULT_KERNEL=kernel26\n')
 				conf.close()
@@ -395,7 +414,7 @@ def _main(argv=None):
 					stat = os.stat(imagelocation)
 					today = datetime.datetime.now()
 					mtime = datetime.datetime(*time.localtime(stat.st_mtime)[:7])
-					staleDiff = datetime.timedelta(days=imagetimeout)
+					staleDiff = datetime.timedelta(days=float(imagetimeout))
 					if today - mtime >= staleDiff:
 						mkchroot(confpath, imagelocation)
 				else:
@@ -411,7 +430,7 @@ def _main(argv=None):
 				waka = Waka(build, os.path.join(builddir, build.sourceFilename), mirrorurl, **otherargs)
 				waka.start()
 				threads.append(waka)
-		time.sleep(sleeptime)
+		time.sleep(float(sleeptime))
 			
 
 if __name__ == "__main__":

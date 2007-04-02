@@ -19,16 +19,14 @@
 # 
 
 import sys
-#sys.path.append('/etc')
-#import appleConfig
 import os, os.path, datetime
+import ConfigParser
 # next two imports are for OptionParser
 from copy import copy
 from optparse import Option, OptionValueError, OptionParser
 from pacbuild.apple import connect, rpc, package, misc
 
-defaultConfig = "/etc/appleConfig.py"
-appleConfig = {}
+defaultConfig = "/etc/pacbuild/apple.conf"
 
 UMASK = 0
 
@@ -117,29 +115,53 @@ def _main(argv=None):
 		argv = sys.argv
 
 	# instantiate parser object and set it loose
-	parser = createOptParser()
-	(opts, args) = parser.parse_args()
+	optparser = createOptParser()
+	(opts, args) = optparser.parse_args()
 
 	# use results of parse_args to set things up
 	configPath = opts.config
+
+	# parse the config file
+	cfgparser = ConfigParser.ConfigParser()
+	cfgparser.read(configPath)
+
+	# store values from config file
+	packagedir = cfgparser.get("options","packagedir")
+	dbdir = cfgparser.get("options","dbdir")
+	pkgtimeout = cfgparser.get("options","packagetimeout")
+
+	# check the config file paths
+	if not os.path.isdir(packagedir):
+		raise StandardError("%s: invalid package directory %s" % configPath, packagedir)
+	if not os.path.isdir(dbdir):
+		raise StandardError("%s: invalid database directory %s" % configPath, dbdir)
+
+	# check that config file timeout is a number
+	if not pkgtimeout.isnumeric():
+		raise StandardError("%s: invalid timout value %s" % configPath, pkgtimeout)
+
+	# if daemon option is set, fork the process
 	if opts.daemon:
 		createDaemon()
 		pid = open('/var/run/apple.pid', 'w')
 		pid.write('%s\n' % os.getpid())
 		pid.close()
 
-	execfile(configPath, appleConfig, appleConfig)
+	# establish and connect to the database
+	database = connectionForURI("sqlite://%s/apple.db" % dbdir)
+	connect(database)
 
-	connect(appleConfig['database'])
-	package.packagedir = appleConfig['Packagedir']
+	# set the package directory
+	package.packagedir = packagedir
 
 	rpc.init()
 
 	try:
 		builderTimeout = datetime.timedelta(hours=1, minutes=5)
+		staleTimeout = datetime.timedelta(hours=pkgtimeout)
 		while True:
 			for i in package.getBuilds():
-				if i.isStale(appleConfig['stalePackageTimeout']):
+				if i.isStale(staleTimeout):
 					i.unbuild()
 			for i in misc.Builder.select():
 				if (datetime.datetime.now() - i.lastBeat >= builderTimeout):

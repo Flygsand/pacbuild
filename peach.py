@@ -19,14 +19,31 @@
 # 
 
 import sys
-sys.path.append('/etc')
-import appleConfig
-from pacbuild.apple import connect, package, misc
 import cgi
 import re
+import ConfigParser
+from pacbuild.apple import connect, package, misc
 
-connect(appleConfig.database)
-package.packagedir = appleConfig.Packagedir
+# parse the config file
+cfgparser = ConfigParser.ConfigParser()
+cfgparser.read(configPath)
+
+# store values from config file
+packagedir = cfgparser.get("options","packagedir")
+dbdir = cfgparser.get("options","dbdir")
+
+# check the config file paths
+if not os.path.isdir(packagedir):
+	raise StandardError("%s: invalid package directory %s" % configPath, packagedir)
+if not os.path.isdir(dbdir):
+	raise StandardError("%s: invalid database directory %s" % configPath, dbdir)
+
+# establish and connect to the database
+database = connectionForURI("sqlite://%s/apple.db" % dbdir)
+connect(database)
+
+# set the package directory
+package.packagedir = packagedir
 
 def job_list(all=False, archid=None):
 	print '''Content-type: text/html

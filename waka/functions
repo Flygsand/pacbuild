@@ -35,29 +35,6 @@ error() {
 	exit 2
 }
 
-usage() {
-	msg "mkchroot version $myver"
-	msg "usage: $0 [options] <source package>"
-	msg  "options:"
-	msg  "  -h, --help       This help"
-#	msg  "  -b, --builddeps  Build missing dependencies from source"
-#	msg  "  -c, --clean      Clean up work files after build"
-#	msg  "  -d, --nodeps     Skip all dependency checks"
-#	msg  "  -f, --force      Overwrite existing package"
-#	msg  "  -g, --genmd5     Generate MD5sums for source files"
-#	msg  "  -m, --nocolor    Disable colorized output messages"
-#	msg  "  -n, --nostrip    Do not strip binaries/libraries"
-#	msg  "  -p <buildscript> Use an alternate build script (instead of PKGBUILD)"
-	msg  "  -w <destdir>     Write package to <destdir> instead of the working dir"
-	msg  "  -l <destdir>     Write build log to <destdir> instead of the working dir"
-	msg  "  -o <configfile>  Use an alternate config file"
-	msg  "  -p <pacmanconfigfile>  Use an alternate pacman config file"
-	msg  "  -c <imgfile>  Create an image to use in subsequent builds"
-	msg  "  -i <imgfile>  Use image as build base"
-
-}
-
-
 ########################################
 # wakachroot functions
 ########################################
@@ -74,44 +51,41 @@ makeroot() {
 }
 
 fs_mount() {
-	ret=0
+	local ret=0
 	msg "Mounting sysfs..."
 		mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
 	msg "Mounting procfs..."
 		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
 #		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
-	msg "Creating dev..."
+	msg "Copying devfs..."
 		cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev || ret=1
+
 	return $ret
 }
 
 fs_umount() {
-	ret=0
+	local ret=0
 	msg "Umounting sysfs..."
 		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
 	msg "Umounting procfs..."
 #		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
 		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
-#	msg "Umounting devfs..."
-#		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev
 
 	return $ret
 }
 
 fs_bind() {
+	local ret=0
 	msg "Using global package cache..."
-		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
-#		mount --bind /var/cache/pacman/pkg/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/
-		# Try hard linking and if that doesn't work, try copying
-		cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || return 1
-#	msg "Using global source cache..."
-#		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
-#		mount --bind /var/cache/pacman/src/ $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src/
+		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg || ret=1
+
+		# Try hard linking- if that doesn't work, try copying
+		cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || ret=1
+
+	return $ret
 }
 
 fs_unbind() {
-#	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/src
-#	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg
 	rsync -a $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
 	rm $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/*
 }

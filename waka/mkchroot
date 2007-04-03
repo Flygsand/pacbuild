@@ -1,9 +1,9 @@
 #!/bin/bash
 
+myver="0.4"
+
 # include for enviromental settings
 source /etc/makepkg.conf
-## get configuration stuff
-#source /mnt/temp/wakachroot/mkchroot.conf
 
 CLEANUP=1
 
@@ -15,6 +15,22 @@ CONFIGFILE="/etc/mkchroot.conf"
 PACMANFILE=""
 CREATEIMG=""
 USEIMG=""
+
+# usage function
+usage() {
+	echo "mkchroot version $myver"
+	echo "usage: $0 [options] <source package>"
+	echo "options:"
+	echo "  -h, --help        This help"
+	echo "  -w <destdir>      Write package to <destdir> instead of the working dir"
+	echo "  -l <destdir>      Write build log to <destdir> instead of the working dir"
+	echo "  -o <configfile>   Use an alternate config file"
+	echo "  -p <pacmanconfig> Use an alternate pacman config file"
+	echo "  -c <imgfile>      Create an image to use in subsequent builds"
+	echo "  -i <imgfile>      Use image as build base"
+}
+
+# PROGRAM START
 
 while [ $# -ne 0 ]; do
 	case $1 in
@@ -82,18 +98,20 @@ fi
 
 # get configuration stuff
 source $CONFIGFILE
-# now get some function library of ours up
+
+# source functions after sourcing config as some stuff depends on
+# variables in the config file
 source /usr/share/waka/functions
 
 if [ "$CREATEIMG" != "" ]; then
 	if echo $CREATEIMG | grep -v ^/ 2>&1 > /dev/null; then
-		CREATEIMG="`pwd`/$CREATEIMG"
+		CREATEIMG="$(pwd)/$CREATEIMG"
 	fi
 fi
 
 if [ "$TARBALL" != "" ]; then
 	if echo $TARBALL | grep -v ^/ 2>&1 > /dev/null; then
-		TARBALL="`pwd`/$TARBALL"
+		TARBALL="$(pwd)/$TARBALL"
 	fi
 fi
 if [ \( "$TARBALL" = "" -o ! -f "$TARBALL" \) -a "$CREATEIMG" = "" ]; then
@@ -167,7 +185,7 @@ if [ -f $TARBALL ]; then
 	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/ || error "Source tarball not found!"
 
 	cp /usr/share/waka/build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
-	JUSTTARBALL=`basename $TARBALL`
+	JUSTTARBALL=$(basename $TARBALL)
 	sed -i "s|#TARBALL#|${JUSTTARBALL}|g"       $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	

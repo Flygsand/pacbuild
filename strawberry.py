@@ -150,8 +150,8 @@ class Waka(threading.Thread):
 		self.mkchrootPath = os.path.join(self.buildDir,"mkchroot.conf")
 		self.pacmanconfPath = os.path.join(self.buildDir,"pacman.conf")
 		conf = open(self.mkchrootPath, "w")
-		conf.write('WAKA_ROOT_DIR="%s"\n'%self.buildDir)
-		conf.write('WAKA_CHROOT_DIR="chroot/"\n')
+		conf.write('WAKA_ROOT_DIR="%s"\n' % self.buildDir)
+		conf.write('WAKA_CHROOT_DIR="chroot"\n')
 		conf.write('QUIKINST_LOCATION="/usr/share/waka/quickinst"\n')
 		conf.write('PACKAGE_MIRROR_CURRENT="%s"\n' % self.currentUrl)
 		conf.write('PACKAGE_MIRROR_EXTRA="%s"\n' % self.extraUrl)
@@ -263,8 +263,8 @@ def sendBuild(build, binary, log):
 	
 	syslog(LOG_INFO, "Uploaded %s to %s"%(build.sourceFilename, strawberryConfig['url']))
 
-def mkchroot(imgpath):
-	os.system("/usr/bin/mkchroot -c %s" % imgpath)
+def mkchroot(confpath, imgpath):
+	os.system("/usr/bin/mkchroot -o %s -c %s" % (confpath, imgpath))
 
 def check_filename(option, opt, value):
 	if os.path.isfile(value):
@@ -345,15 +345,28 @@ def _main(argv=None):
 				del threads[i]
 		if canBuild():
 			if strawberryConfig.has_key('chrootImage'):
+				# this is basically verbatim from above, but we need more
+				# abstraction before it can be rewritten as non-duplicate code
+				confpath = "/tmp/mkchroot_xxx.conf"
+				conf = open(confpath, "w")
+				conf.write('WAKA_ROOT_DIR="%s"\n' % strawberryConfig['buildDir'])
+				conf.write('WAKA_CHROOT_DIR="chroot"\n')
+				conf.write('QUIKINST_LOCATION="/usr/share/waka/quickinst"\n')
+				conf.write('PACKAGE_MIRROR_CURRENT="%s"\n' % strawberryConfig['currentUrl'])
+				conf.write('PACKAGE_MIRROR_EXTRA="%s"\n' % strawberryConfig['extraUrl'])
+				conf.write('DEFAULT_PKGDEST=${WAKA_ROOT_DIR}/\n')
+				conf.write('DEFAULT_KERNEL=kernel26\n')
+				conf.close()
+
 				if os.path.isfile(strawberryConfig['chrootImage']):
 					stat = os.stat(strawberryConfig['chrootImage'])
 					today = datetime.datetime.now()
 					mtime = datetime.datetime(*time.localtime(stat.st_mtime)[:7])
 					staleDiff = datetime.timedelta(days=14)
 					if today - mtime >= staleDiff:
-						mkchroot(strawberryConfig['chrootImage'])
+						mkchroot(confpath, strawberryConfig['chrootImage'])
 				else:
-					mkchroot(strawberryConfig['chrootImage'])
+					mkchroot(confpath, strawberryConfig['chrootImage'])
 			build = getNextBuild()
 			if build is not None and build is not False:
 				print "Got a new build: %s" % build.sourceFilename

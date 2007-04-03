@@ -16,6 +16,119 @@ PACMANFILE=""
 CREATEIMG=""
 USEIMG=""
 
+# message functions
+# TODO these are the same as makepkg functions, so make them
+# common in /usr/share/archlinux
+
+plain() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "    \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "    $1" >&2
+	fi
+}
+
+msg() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "\033[1;32m==>\033[1;0m \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "==> $1" >&2
+	fi
+}
+
+warning() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "\033[1;33m==> WARNING:\033[1;0m \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "==> WARNING: $1" >&2
+	fi
+}
+
+error() {
+	if [ "$USE_COLOR" = "Y" -o "$USE_COLOR" = "y" ]; then
+		echo -e "\033[1;31m==> ERROR:\033[1;0m \033[1;1m$1\033[1;0m" >&2
+	else
+		echo "==> ERROR: $1" >&2
+	fi
+	exit 2
+}
+
+# wakachroot functions
+
+cleanup() {
+	if [ -d $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR ]; then
+		msg "Removing old virtual root... (This may take a while)"
+		rm -rf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+	fi
+}
+
+makeroot() {
+	cleanup
+	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+}
+
+fs_mount() {
+	local ret=0
+	msg "Mounting sysfs..."
+		mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
+	msg "Mounting procfs..."
+		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
+#		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
+	msg "Copying devfs..."
+		cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev || ret=1
+
+	return $ret
+}
+
+fs_umount() {
+	local ret=0
+	msg "Umounting sysfs..."
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
+	msg "Umounting procfs..."
+#		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
+		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
+
+	return $ret
+}
+
+fs_bind() {
+	local ret=0
+	msg "Using global package cache..."
+		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg || ret=1
+
+		# Try hard linking- if that doesn't work, try copying
+		cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || ret=1
+
+	return $ret
+}
+
+fs_unbind() {
+	rsync -a $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
+	rm $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/*
+}
+
+quickinst() {
+	if [ -f /tmp/packages.txt ]; then
+		rm /tmp/packages.txt
+	fi
+	msg "Running ${QUIKINST_LOCATION} ftp ${WAKA_ROOT_DIR}/${WAKA_CHROOT_DIR} ${PACKAGE_MIRROR_CURRENT}"
+	. $QUIKINST_LOCATION ftp $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR $PACKAGE_MIRROR_CURRENT || return 1
+}
+
+conf_update() {
+	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc || return 1
+
+	if [ "$PACMANFILE" = "" ]; then
+		echo "[current]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+		echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+
+		echo "[extra]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+		echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+	else
+		cp $PACMANFILE $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.conf || return 1
+	fi
+}
+
 # usage function
 usage() {
 	echo "mkchroot version $myver"
@@ -98,10 +211,6 @@ fi
 
 # get configuration stuff
 source $CONFIGFILE
-
-# source functions after sourcing config as some stuff depends on
-# variables in the config file
-source /usr/share/waka/functions
 
 if [ "$CREATEIMG" != "" ]; then
 	if echo $CREATEIMG | grep -v ^/ 2>&1 > /dev/null; then

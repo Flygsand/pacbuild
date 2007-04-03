@@ -62,7 +62,7 @@ def job_list(all=False, archid=None):
 	print '''<hr />
 <table cellpadding='5px' cellspacing='0px'>
 <tr>
-	<th>Package</th><th>Arch</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
+	<th>ID</th><th>Package</th><th>Arch</th><th>Status</th><th>Log</th><th>Colorized Log</th><th>Package</th>
 </tr>
 '''
 	
@@ -76,10 +76,15 @@ def job_list(all=False, archid=None):
 
 	for i in packages:
 		print "<tr class='%s'>" % i.status
+		print "<td>%s</td>"%(i.id)
 		print "<td>%s-%s-%s</td><td>%s</td><td>%s</td>"%(i.name,i.pkgver,i.pkgrel,i.arch.name,i.status)
 		print "<td><a href='?action=log&id=%s'>Log</a></td>"%(i.id)
 		print "<td><a href='?action=colorlog&id=%s'>Colorized Log</a></td>"%(i.id)
-		print "<td><a href='?action=pkg&id=%s'>%s-%s-%s.pkg.tar.gz</a></td>"%(i.id,i.name,i.pkgver,i.pkgrel)
+		# if build is not 'done', don't print a link
+		if i.status == 'done':
+			print "<td><a href='?action=pkg&id=%s'>%s-%s-%s.pkg.tar.gz</a></td>"%(i.id,i.name,i.pkgver,i.pkgrel)
+		else:
+			print "<td>%s-%s-%s.pkg.tar.gz</td>"%(i.name,i.pkgver,i.pkgrel)
 		print "</tr>"
 	print "</table></body></html>"
 

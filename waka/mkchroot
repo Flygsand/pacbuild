@@ -48,7 +48,6 @@ error() {
 	else
 		echo "==> ERROR: $1" >&2
 	fi
-	exit 2
 }
 
 # wakachroot functions
@@ -258,6 +257,7 @@ fi
 makeroot
 if [ $? -ne 0 ]; then
 	error "Can't create chroot directory"
+	exit 1
 fi
 
 # if we aren't using a preexisting image, do an install
@@ -268,7 +268,7 @@ if [ -z "$USEIMG" ]; then
 	if [ $? -ne 0 ]; then
 		fs_unbind
 		error "Can't build chroot"
-		#exit 1 # TODO failure course of action
+		exit 1
 	fi
 else
 	msg "Extracting base image..."
@@ -276,10 +276,10 @@ else
 	tar -xjf $USEIMG
 	if [ $? -ne 0 ]; then
 		error "Can't extract image"
-		#exit 1 # TODO failure course of action
+		exit 1
 	fi
-	# TODO why wasn't this here before?
-	#fs_bind # if fs_bind fails, we will just end up always downloading
+	# fs_bind was not called here before, perhaps due to it being slow
+	fs_bind # if fs_bind fails, we will just end up always downloading
 fi
 
 # if CREATEIMG is defined, zip up the image to the specified location
@@ -305,7 +305,7 @@ if [ $? -ne 0 ]; then
 	fs_unbind
 	cleanup
 	error "Problem mounting filesystems"
-	#exit 1 # TODO failure course of action
+	exit 1
 fi
 
 # copy general configuration from host system
@@ -315,7 +315,7 @@ if [ $? -ne 0 ]; then
 	fs_unbind
 	cleanup
 	error "Problem updating configs"
-	#exit 1 # TODO failure course of action
+	exit 1
 fi
 
 if [ -f $TARBALL ]; then

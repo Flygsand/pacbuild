@@ -5,9 +5,7 @@ myver="0.4"
 # include for enviromental settings
 source /etc/makepkg.conf
 
-CLEANUP=1
-
-ARGLIST=$@
+# default values
 TARBALL=""
 PKGDEST=""
 LOGDEST=""
@@ -55,6 +53,7 @@ error() {
 
 # wakachroot functions
 
+# clean up any files left in the chroot path
 cleanup() {
 	if [ -d $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR ]; then
 		msg "Removing old virtual root... (This may take a while)"
@@ -62,51 +61,60 @@ cleanup() {
 	fi
 }
 
+# make a new chroot directory at the specified path
 makeroot() {
+	local ret=0
 	cleanup
-	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR || ret=1
+
+	return $ret
 }
 
+# mount sysfs and proc filesystems, and copy devfs
 fs_mount() {
 	local ret=0
 	msg "Mounting sysfs..."
-		mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
+	mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
 	msg "Mounting procfs..."
-		mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
-#		mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
+	mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
+#	mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
 	msg "Copying devfs..."
-		cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev || ret=1
+	cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev || ret=1
 
 	return $ret
 }
 
+# unmount sysfs and proc filesystems (doing nothing with copied devfs)
 fs_umount() {
 	local ret=0
 	msg "Umounting sysfs..."
-		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
+	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
 	msg "Umounting procfs..."
-#		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
-		umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
+#	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
+	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
 
 	return $ret
 }
 
+# bind the 'global package cache' inside of the chroot (to save on downloading)
 fs_bind() {
 	local ret=0
 	msg "Using global package cache..."
-		mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg || ret=1
+	mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg || ret=1
 
-		# Try hard linking- if that doesn't work, try copying
-		cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || ret=1
+	# Try hard linking- if that doesn't work, try copying
+	cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || ret=1
 
 	return $ret
 }
 
+# unbind the 'global package cache', copying any new downloads back
 fs_unbind() {
 	rsync -a $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
 	rm $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/*
 }
 
+# call the quickinst script to install packages from FTP
 quickinst() {
 	if [ -f /tmp/packages.txt ]; then
 		rm /tmp/packages.txt
@@ -115,6 +123,7 @@ quickinst() {
 	. $QUIKINST_LOCATION ftp $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR $PACKAGE_MIRROR_CURRENT || return 1
 }
 
+# copy resolv.conf from host system and create a pacman.conf file
 conf_update() {
 	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc || return 1
 
@@ -145,6 +154,7 @@ usage() {
 
 # PROGRAM START
 
+# parse command line arguments
 while [ $# -ne 0 ]; do
 	case $1 in
 		--help)
@@ -203,69 +213,82 @@ while [ $# -ne 0 ]; do
 	shift
 done
 
+# check if config file is a valid file path
 if [ ! -f $CONFIGFILE ]; then
 	msg "No config file found: $CONFIGFILE"
 	usage
 	exit 1
 fi
 
-# get configuration stuff
+# get configuration (done here so it can be specified on command line)
 source $CONFIGFILE
 
+# resolve output paths to absolute paths
 if [ "$CREATEIMG" != "" ]; then
 	if echo $CREATEIMG | grep -v ^/ 2>&1 > /dev/null; then
 		CREATEIMG="$(pwd)/$CREATEIMG"
 	fi
 fi
-
 if [ "$TARBALL" != "" ]; then
 	if echo $TARBALL | grep -v ^/ 2>&1 > /dev/null; then
 		TARBALL="$(pwd)/$TARBALL"
 	fi
 fi
+
+# if we aren't creating a tarball or an image, we have a problem
 if [ \( "$TARBALL" = "" -o ! -f "$TARBALL" \) -a "$CREATEIMG" = "" ]; then
 	msg "Source package not found"
 	usage
 	exit 1
 fi
 
+# if PKGDEST or LOGDEST are undefined, set them to their defaults
 if [ "$PKGDEST" = "" ]; then
 	PKGDEST=$DEFAULT_PKGDEST
 fi
-
 if [ "$LOGDEST" = "" ]; then
 	LOGDEST=$DEFAULT_PKGDEST
 fi
 
+# set up the chroot directory
 makeroot
 if [ $? -ne 0 ]; then
 	error "Can't create chroot directory"
 fi
-if [ "$USEIMG" = "" ]; then
-	fs_bind
-	(quickinst)
+
+# if we aren't using a preexisting image, do an install
+if [ -z "$USEIMG" ]; then
+	msg "Installing base chroot image..."
+	fs_bind # we ignore a failure of fs_bind, use && if we shouldn't
+	quickinst
 	if [ $? -ne 0 ]; then
 		fs_unbind
 		error "Can't build chroot"
+		#exit 1 # TODO failure course of action
 	fi
 else
-	msg "Extracting image..."
+	msg "Extracting base image..."
 	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
 	tar -xjf $USEIMG
 	if [ $? -ne 0 ]; then
-		fs_unbind
 		error "Can't extract image"
+		#exit 1 # TODO failure course of action
 	fi
+	# TODO why wasn't this here before?
+	#fs_bind # if fs_bind fails, we will just end up always downloading
 fi
 
-if [ "$CREATEIMG" != "" ]; then
-	msg "Creating image..."
+# if CREATEIMG is defined, zip up the image to the specified location
+# and exit the script- we don't need to build a package
+if [ -n "$CREATEIMG" ]; then
+	msg "Creating base image..."
 	fs_unbind
 	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
 	tar -cjf $CREATEIMG *
 	if [ $? -ne 0 ]; then
 		cleanup
 		error "Can't create image"
+		exit 1
 	fi
 	cleanup
 	exit 0
@@ -278,6 +301,7 @@ if [ $? -ne 0 ]; then
 	fs_unbind
 	cleanup
 	error "Problem mounting filesystems"
+	#exit 1 # TODO failure course of action
 fi
 
 # copy general configuration from host system
@@ -287,34 +311,35 @@ if [ $? -ne 0 ]; then
 	fs_unbind
 	cleanup
 	error "Problem updating configs"
+	#exit 1 # TODO failure course of action
 fi
 
 if [ -f $TARBALL ]; then
+	# make a /waka directory and populate it with necessary files
 	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka
-	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/ || error "Source tarball not found!"
+	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/
 
 	cp /usr/share/waka/build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	JUSTTARBALL=$(basename $TARBALL)
-	sed -i "s|#TARBALL#|${JUSTTARBALL}|g"       $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	# wow, this is a bit hacky
+	sed -i "s|#TARBALL#|${JUSTTARBALL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	
 	chmod +x $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
 	msg "Starting to build package..."
+	# chroot and kick off the build...
 	chroot $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/ /waka/build
+	# ...and we're back. source the PKGBUILD for fetching the package
 	source $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/PKGBUILD
 
+	# TODO this is going to fail hard with pacman3, there should be a better way
 	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/$pkgname-$pkgver-$pkgrel.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
 	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
 else
-	fs_unbind
-	fs_unmount
-	cleanup
 	error "Could not find source tarball!"
 fi
 
 fs_unbind
 fs_umount
+cleanup
 
-if [ ${CLEANUP} -eq 1 ]; then
-	cleanup
-fi

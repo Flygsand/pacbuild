@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-DATAFILES = [('/usr/share/waka', ['waka/functions', 'waka/build', 'waka/quickinst']),
+DATAFILES = [('/usr/share/waka', ['waka/build', 'waka/quickinst']),
              ('/etc/pacbuild', ['waka/mkchroot.conf', 'strawberry.conf', 'apple.conf']),
              ('/usr/share/pacbuild', ['peach.py'])]
 

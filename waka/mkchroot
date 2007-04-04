@@ -55,9 +55,9 @@ error() {
 
 # clean up any files left in the chroot path
 cleanup() {
-	if [ -d $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR ]; then
+	if [ -d $rootpath ]; then
 		msg "Removing old virtual root... (This may take a while)"
-		rm -rf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+		rm -rf $rootpath
 	fi
 }
 
@@ -65,7 +65,7 @@ cleanup() {
 makeroot() {
 	local ret=0
 	cleanup
-	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR || ret=1
+	mkdir $rootpath || ret=1
 
 	return $ret
 }
@@ -74,12 +74,12 @@ makeroot() {
 fs_mount() {
 	local ret=0
 	msg "Mounting sysfs..."
-	mount -t sysfs  sysfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
+	mount -t sysfs  sysfs  $rootpath/sys || ret=1
 	msg "Mounting procfs..."
-	mount -t proc   proc   $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
-#	mount -t usbfs  usbfs  $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
+	mount -t proc   proc   $rootpath/proc || ret=1
+#	mount -t usbfs  usbfs  $rootpath/proc/bus/usb || ret=1
 	msg "Copying devfs..."
-	cp -a /dev $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/dev || ret=1
+	cp -a /dev $rootpath/dev || ret=1
 
 	return $ret
 }
@@ -88,10 +88,10 @@ fs_mount() {
 fs_umount() {
 	local ret=0
 	msg "Umounting sysfs..."
-	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/sys || ret=1
+	umount $rootpath/sys || ret=1
 	msg "Umounting procfs..."
-#	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc/bus/usb || ret=1
-	umount $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/proc || ret=1
+#	umount $rootpath/proc/bus/usb || ret=1
+	umount $rootpath/proc || ret=1
 
 	return $ret
 }
@@ -100,18 +100,18 @@ fs_umount() {
 fs_bind() {
 	local ret=0
 	msg "Using global package cache..."
-	mkdir -p $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg || ret=1
+	mkdir -p $rootpath/var/cache/pacman/pkg || ret=1
 
 	# Try hard linking- if that doesn't work, try copying
-	cp -l /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/ || ret=1
+	cp -l /var/cache/pacman/pkg/* $rootpath/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $rootpath/var/cache/pacman/pkg/ || ret=1
 
 	return $ret
 }
 
 # unbind the 'global package cache', copying any new downloads back
 fs_unbind() {
-	rsync -a $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
-	rm $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/var/cache/pacman/pkg/*
+	rsync -a $rootpath/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
+	rm $rootpath/var/cache/pacman/pkg/*
 }
 
 # call the quickinst script to install packages from FTP
@@ -119,22 +119,22 @@ quickinst() {
 	if [ -f /tmp/packages.txt ]; then
 		rm /tmp/packages.txt
 	fi
-	msg "Running ${QUIKINST_LOCATION} ftp ${WAKA_ROOT_DIR}/${WAKA_CHROOT_DIR} ${PACKAGE_MIRROR_CURRENT}"
-	. $QUIKINST_LOCATION ftp $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR $PACKAGE_MIRROR_CURRENT || return 1
+	msg "Running $QUIKINST_LOCATION ftp $rootpath $PACKAGE_MIRROR_CURRENT"
+	source $QUIKINST_LOCATION ftp $rootpath $PACKAGE_MIRROR_CURRENT || return 1
 }
 
 # copy resolv.conf from host system and create a pacman.conf file
 conf_update() {
-	cp -L /etc/resolv.conf $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc || return 1
+	cp -L /etc/resolv.conf $rootpath/etc || return 1
 
 	if [ "$PACMANFILE" = "" ]; then
-		echo "[current]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
-		echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/current
+		echo "[current]" > $rootpath/etc/pacman.d/current
+		echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $rootpath/etc/pacman.d/current
 
-		echo "[extra]" > $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
-		echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.d/extra
+		echo "[extra]" > $rootpath/etc/pacman.d/extra
+		echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $rootpath/etc/pacman.d/extra
 	else
-		cp $PACMANFILE $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/etc/pacman.conf || return 1
+		cp $PACMANFILE $rootpath/etc/pacman.conf || return 1
 	fi
 }
 
@@ -223,6 +223,10 @@ fi
 # get configuration (done here so it can be specified on command line)
 source $CONFIGFILE
 
+# now that we've sourced the config file - let's make referencing
+# the most commmon path nice and easy
+rootpath="$WAKA_ROOT_DIR/$WAKA_CHROOT_DIR"
+
 # resolve output paths to absolute paths
 if [ "$CREATEIMG" != "" ]; then
 	if echo $CREATEIMG | grep -v ^/ 2>&1 > /dev/null; then
@@ -268,7 +272,7 @@ if [ -z "$USEIMG" ]; then
 	fi
 else
 	msg "Extracting base image..."
-	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+	cd $rootpath
 	tar -xjf $USEIMG
 	if [ $? -ne 0 ]; then
 		error "Can't extract image"
@@ -283,7 +287,7 @@ fi
 if [ -n "$CREATEIMG" ]; then
 	msg "Creating base image..."
 	fs_unbind
-	cd $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR
+	cd $rootpath
 	tar -cjf $CREATEIMG *
 	if [ $? -ne 0 ]; then
 		cleanup
@@ -316,25 +320,25 @@ fi
 
 if [ -f $TARBALL ]; then
 	# make a /waka directory and populate it with necessary files
-	mkdir $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka
-	cp $TARBALL $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/
+	mkdir $rootpath/waka
+	cp $TARBALL $rootpath/waka/
 
-	cp /usr/share/waka/build $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	cp /usr/share/waka/build $rootpath/waka/build
 	JUSTTARBALL=$(basename $TARBALL)
 	# wow, this is a bit hacky
-	sed -i "s|#TARBALL#|${JUSTTARBALL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
-	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	sed -i "s|#TARBALL#|${JUSTTARBALL}|g" $rootpath/waka/build
+	sed -i "s|#KERNEL#|${DEFAULT_KERNEL}|g" $rootpath/waka/build
 	
-	chmod +x $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/build
+	chmod +x $rootpath/waka/build
 	msg "Starting to build package..."
 	# chroot and kick off the build...
-	chroot $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/ /waka/build
+	chroot $rootpath/ /waka/build
 	# ...and we're back. source the PKGBUILD for fetching the package
-	source $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/PKGBUILD
+	source $rootpath/waka/PKGBUILD
 
 	# TODO this is going to fail hard with pacman3, there should be a better way
-	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/$pkgname-$pkgver-$pkgrel.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
-	mv $WAKA_ROOT_DIR/$WAKA_CHROOT_DIR/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
+	mv $rootpath/waka/$pkgname-$pkgver-$pkgrel.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
+	mv $rootpath/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
 else
 	error "Could not find source tarball!"
 fi

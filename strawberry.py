@@ -207,7 +207,7 @@ class Heartbeat(threading.Thread):
 			time.sleep(self.pulse)
 
 def canBuild():
-	return Build.select().count() < config['maxbuilds']
+	return Build.select().count() < int(config['maxbuilds'])
 
 def getPacmanConfig(name, arch, md5):
 	global pacmanConfigs
@@ -378,8 +378,7 @@ def _main(argv=None):
 	# Start any builds that never actually finished last time
 	for i in Build.select():
 		# Clean up any half-built versions- we're starting fresh
-		if os.path.isdir(os.path.join(builddir, i.sourceFilename)):
-			shutil.rmtree(os.path.join(builddir, i.sourceFilename))
+		# (this code removed, waka/mkchroot will take care of it)
 
 		otherargs = {}
 		if chrootimage == "true":

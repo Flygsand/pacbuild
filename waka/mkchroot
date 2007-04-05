@@ -55,8 +55,14 @@ error() {
 # clean up any files left in the chroot path
 cleanup() {
 	if [ -d $rootpath ]; then
+		# check for proc and sys dirs so we don't try to remove them
+		if [ -e $rootpath/sys/devices -o -e $rootpath/proc/cpuinfo ]; then
+			fs_umount
+		fi
+
 		msg "Removing old virtual root... (This may take a while)"
 		rm -rf $rootpath
+		msg "Virtual root removal complete."
 	fi
 }
 
@@ -64,6 +70,7 @@ cleanup() {
 makeroot() {
 	local ret=0
 	cleanup
+	msg "Creating chroot directory..."
 	mkdir $rootpath || ret=1
 
 	return $ret
@@ -102,15 +109,17 @@ fs_bind() {
 	mkdir -p $rootpath/var/cache/pacman/pkg || ret=1
 
 	# Try hard linking- if that doesn't work, try copying
-	cp -l /var/cache/pacman/pkg/* $rootpath/var/cache/pacman/pkg/ || cp /var/cache/pacman/pkg/* $rootpath/var/cache/pacman/pkg/ || ret=1
+	cp -rl /var/cache/pacman/pkg/ $rootpath/var/cache/pacman/ || cp -r /var/cache/pacman/pkg/ $rootpath/var/cache/pacman/ || ret=1
 
 	return $ret
 }
 
 # unbind the 'global package cache', copying any new downloads back
 fs_unbind() {
-	rsync -a $rootpath/var/cache/pacman/pkg/* /var/cache/pacman/pkg/
-	rm $rootpath/var/cache/pacman/pkg/*
+	msg "Syncing packages back to global package cache..."
+	rsync -a $rootpath/var/cache/pacman/pkg/ /var/cache/pacman/pkg
+	# can't use a straight 'rm *' because argument list can be too long
+	find $rootpath/var/cache/pacman/pkg/ -type f -print0 | xargs -0 rm
 }
 
 # call the quickinst script to install packages from FTP
@@ -226,13 +235,19 @@ source $CONFIGFILE
 # the most commmon path nice and easy
 rootpath="$WAKA_ROOT_DIR/$WAKA_CHROOT_DIR"
 
-# resolve output paths to absolute paths
-if [ "$CREATEIMG" != "" ]; then
+# resolve paths to absolute paths
+# TODO there has to be a better way?
+if [ -n "$CREATEIMG" ]; then
 	if echo $CREATEIMG | grep -v ^/ 2>&1 > /dev/null; then
 		CREATEIMG="$(pwd)/$CREATEIMG"
 	fi
 fi
-if [ "$TARBALL" != "" ]; then
+if [ -n "$USEIMG" ]; then
+	if echo $USEIMG | grep -v ^/ 2>&1 > /dev/null; then
+		USEIMG="$(pwd)/$USEIMG"
+	fi
+fi
+if [ -n "$TARBALL" ]; then
 	if echo $TARBALL | grep -v ^/ 2>&1 > /dev/null; then
 		TARBALL="$(pwd)/$TARBALL"
 	fi
@@ -256,6 +271,7 @@ fi
 # set up the chroot directory
 makeroot
 if [ $? -ne 0 ]; then
+	cleanup
 	error "Can't create chroot directory"
 	exit 1
 fi
@@ -267,6 +283,7 @@ if [ -z "$USEIMG" ]; then
 	quickinst
 	if [ $? -ne 0 ]; then
 		fs_unbind
+		cleanup
 		error "Can't build chroot"
 		exit 1
 	fi
@@ -275,6 +292,7 @@ else
 	cd $rootpath
 	tar -xjf $USEIMG
 	if [ $? -ne 0 ]; then
+		cleanup
 		error "Can't extract image"
 		exit 1
 	fi
@@ -343,7 +361,7 @@ else
 	error "Could not find source tarball!"
 fi
 
-fs_unbind
 fs_umount
+fs_unbind
 cleanup
 

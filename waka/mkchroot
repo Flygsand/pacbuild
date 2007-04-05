@@ -9,7 +9,7 @@ source /etc/makepkg.conf
 TARBALL=""
 PKGDEST=""
 LOGDEST=""
-CONFIGFILE="/etc/mkchroot.conf"
+CONFIGFILE="/etc/pacbuild/mkchroot.conf"
 PACMANFILE=""
 CREATEIMG=""
 USEIMG=""

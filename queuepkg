@@ -17,6 +17,7 @@
 
 import os, os.path, sys, md5
 import xmlrpclib
+import socket
 import commands
 
 from optparse import OptionParser
@@ -124,6 +125,10 @@ if __name__ == "__main__":
 	server = xmlrpclib.ServerProxy(url)
 
 	# def submitPKGBUILD(self, user, password, arch, name, pkgver, pkgrel, priority, pacmanconfig, source):
-	print server.submitPKGBUILD(usernm, passwd, arch, \
-	                            pkgname, pkgver, pkgrel, \
-	                            int(priority), config, output)
+	try:
+		print server.submitPKGBUILD(usernm, passwd, arch, \
+	                                pkgname, pkgver, pkgrel, \
+	                                int(priority), config, output)
+	except socket.error, err:
+		print "Error while establishing the connection! The apple build server may be down."
+

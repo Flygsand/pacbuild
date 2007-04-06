@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # 
-# peach - Build server status script
-# Copyright (C) 2005 Simo Leone <simo@archlinux.org>
+#   peach - Build server status script
+#   Copyright (C) 2005-2007 Simo Leone <simo@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

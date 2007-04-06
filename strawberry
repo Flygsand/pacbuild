@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # 
-# strawberry - Main client daemon
-# Copyright (C) 2005 Jason Chu <jason@archlinux.org>
+#   strawberry - Main client daemon
+#   Copyright (C) 2005-2007 Jason Chu <jason@archlinux.org>
 # 
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

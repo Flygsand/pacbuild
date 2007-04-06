@@ -4,7 +4,7 @@
 . /etc/rc.d/functions
 
 DAEMON_NAME="strawberry"
-STRAWBERRY_BIN=/usr/bin/strawberry.py
+STRAWBERRY_BIN=/usr/bin/strawberry
 PID=`cat /var/run/strawberry.pid 2>/dev/null`
 case "$1" in
   start)

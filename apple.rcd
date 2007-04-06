@@ -4,7 +4,7 @@
 . /etc/rc.d/functions
 
 DAEMON_NAME="apple"
-APPLE_BIN=/usr/bin/apple.py
+APPLE_BIN=/usr/bin/apple
 PID=`cat /var/run/apple.pid 2>/dev/null`
 case "$1" in
   start)

@@ -22,7 +22,7 @@ import sys
 import os, os.path
 import cgi
 import re
-import ConfigParser
+from ConfigParser import SafeConfigParser
 from pacbuild.apple import connect, package, misc
 from sqlobject import *
 
@@ -32,7 +32,7 @@ defaultConfig = "/etc/pacbuild/apple.conf"
 configpath = defaultConfig
 
 # parse the config file
-cfgparser = ConfigParser.ConfigParser()
+cfgparser = SafeConfigParser()
 cfgparser.read(configpath)
 
 # store values from config file

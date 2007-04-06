@@ -20,7 +20,7 @@
 
 import sys
 import os, os.path, datetime
-import ConfigParser
+from ConfigParser import SafeConfigParser
 # next two imports are for OptionParser
 from copy import copy
 from optparse import Option, OptionValueError, OptionParser
@@ -132,7 +132,7 @@ def _main(argv=None):
 		raise StandardError("invalid config file specified")
 
 	# parse the config file
-	cfgparser = ConfigParser.ConfigParser()
+	cfgparser = SafeConfigParser()
 	cfgparser.read(configpath)
 
 	# store values from config file

@@ -200,10 +200,10 @@ class Waka(threading.Thread):
 		sendBuild(self.build, binary, log)
 		shutil.rmtree(self.buildDir)
 
-class Heartbeat(threading.Thread):
+class Heartbeat(ForkWorker):
 	def __init__(self, **other):
-		threading.Thread.__init__(self, *other)
 		self.pulse = 3600
+		super(ForkWorker, self).__init__(**other)
 	def run(self):
 		while True:
 			try:
@@ -379,7 +379,6 @@ def _main(argv=None):
 
 	# Kick off our heartbeat thread
 	heartbeat = Heartbeat()
-	heartbeat.start()
 
 	threads = []
 

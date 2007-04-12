@@ -96,6 +96,14 @@ def createDaemon():
 
 	return(0)
 
+class ForkWorker(object):
+	def __init__(self):
+		self.child = os.fork()
+		if self.child == 0:
+			self.run()
+		else:
+			return
+
 class PacmanConf:
 	def __init__(self, name, arch, data):
 		self.name = name

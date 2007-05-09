@@ -97,12 +97,19 @@ def createDaemon():
 	return(0)
 
 class ForkWorker(object):
-	def __init__(self):
+	def start(self):
 		self.child = os.fork()
 		if self.child == 0:
 			self.run()
 		else:
 			return
+
+	def isAlive(self):
+		val = os.waitpid(self.child, os.WNOHANG)
+		if val == (0,0):
+			return True
+		else:
+			return False
 
 class PacmanConf:
 	def __init__(self, name, arch, data):
@@ -130,9 +137,8 @@ class Build(SQLObject):
 		else:
 			return self._SO_get_source().decode('base64')
 
-class Waka(threading.Thread):
-	def __init__(self, build, buildDir, mirrorUrl, chrootImage=None, **other):
-		threading.Thread.__init__(self, *other)
+class Waka(ForkWorker):
+	def __init__(self, build, buildDir, mirrorUrl, chrootImage=None):
 		self.buildDir = buildDir
 		self.mirrorUrl = mirrorUrl
 		self.build = build
@@ -173,19 +179,24 @@ class Waka(threading.Thread):
 	def run(self):
 		global done
 		syslog(LOG_INFO, "Beginning build of %s" % (self.build.sourceFilename))
-		addargs = ""
+		spawnargs = ["/usr/bin/mkchroot", "-o", self.mkchrootPath]
 		if self.chrootImage:
-			addargs = "-i %s" % self.chrootImage
+			spawnargs.extend(["-i", self.chrootImage])
 		if self.pacmanconfPath:
-			addargs = addargs + " -p %s" % self.pacmanconfPath
-		ret = os.system("/usr/bin/mkchroot -o %s %s %s"%(self.mkchrootPath, addargs, self.sourcePkg))
-		if ret != 0:
+			spawnargs.extend(["-p", self.pacmanconfPath])
+		spawnargs.append(self.sourcePkg)
+		ret = os.spawnv(os.P_WAIT, "/usr/bin/mkchroot", spawnargs)
+		if ret > 0:
 			# There was an error building
 			# Log something so the admin can figure out what's up
 			# Tell apple
 			syslog(LOG_ERR, "Error building %s"%(self.build.sourceFilename))
 			shutil.rmtree(self.buildDir)
 			done = True
+		elif ret < 0:
+			# A signal was thrown
+			# FIXME: Possibly it was a SIGINT and we need to clean up
+			pass
 		# Do the post build stuff
 		self.binaryPkg = re.sub('\.src\.tar\.gz$', '.pkg.tar.gz', self.sourcePkg)
 		self.logFile = re.sub('\.src\.tar\.gz$', '.makepkg.log', self.sourcePkg)
@@ -201,9 +212,8 @@ class Waka(threading.Thread):
 		shutil.rmtree(self.buildDir)
 
 class Heartbeat(ForkWorker):
-	def __init__(self, **other):
+	def __init__(self):
 		self.pulse = 3600
-		super(ForkWorker, self).__init__(**other)
 	def run(self):
 		while True:
 			try:
@@ -267,7 +277,7 @@ def sendBuild(build, binary, log):
 	syslog(LOG_INFO, "Uploaded %s to %s"%(build.sourceFilename, config['url']))
 
 def mkchroot(confpath, imgpath):
-	os.system("/usr/bin/mkchroot -o %s -c %s" % (confpath, imgpath))
+	os.spawnl(os.P_WAIT, "/usr/bin/mkchroot", "-o", confpath, "-c", imgpath)
 
 def check_filename(option, opt, value):
 	if os.path.isfile(value):
@@ -379,6 +389,7 @@ def _main(argv=None):
 
 	# Kick off our heartbeat thread
 	heartbeat = Heartbeat()
+	heartbeat.start()
 
 	threads = []
 

@@ -198,8 +198,10 @@ class Waka(ForkWorker):
 			# FIXME: Possibly it was a SIGINT and we need to clean up
 			pass
 		# Do the post build stuff
-		self.binaryPkg = re.sub('\.src\.tar\.gz$', '.pkg.tar.gz', self.sourcePkg)
-		self.logFile = re.sub('\.src\.tar\.gz$', '.makepkg.log', self.sourcePkg)
+		#strip the '.src.tar.gz' ending and add arch suffix
+		pkgprefix = '%s%s%s'%(self.sourcePkg[:-11], '-', config["arch"])
+		self.binaryPkg = '%s%s'%(pkgprefix, '.pkg.tar.gz')
+		self.logFile = '%s%s'%(pkgprefix, '.makepkg.log')
 
 		if os.path.isfile(self.binaryPkg):
 			binary = open(self.binaryPkg).read()

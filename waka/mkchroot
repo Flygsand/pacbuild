@@ -86,6 +86,8 @@ fs_mount() {
 #	mount -t usbfs  usbfs  $rootpath/proc/bus/usb || ret=1
 	msg "Copying devfs..."
 	cp -a /dev $rootpath/dev || ret=1
+	msg "Copying /etc/mtab..."
+	cp -p /etc/mtab $rootpath/etc/mtab || ret=1
 
 	return $ret
 }
@@ -355,8 +357,8 @@ if [ -f $TARBALL ]; then
 	source $rootpath/waka/PKGBUILD
 
 	# TODO this is going to fail hard with pacman3, there should be a better way
-	mv $rootpath/waka/$pkgname-$pkgver-$pkgrel.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
-	mv $rootpath/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel.makepkg.log || warning "Logfile could not be retrieved!"
+	mv $rootpath/waka/$pkgname-$pkgver-$pkgrel-$CARCH.pkg.tar.gz $PKGDEST || warning "Package could not be retrieved!"
+	mv $rootpath/waka/makepkg.log $LOGDEST/$pkgname-$pkgver-$pkgrel-$CARCH.makepkg.log || warning "Logfile could not be retrieved!"
 else
 	error "Could not find source tarball!"
 fi

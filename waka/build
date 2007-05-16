@@ -6,8 +6,7 @@ pacman --noconfirm -Sy #KERNEL# namcap
 tar xzfp #TARBALL#
 
 # run makepkg and log the output
-# TODO when we switch to pacman3, just use the -L flag
-(makepkg -s --noconfirm --noprogressbar 1>makepkg.log 2>&1)
+(makepkg -s -L --noconfirm --noprogressbar 2>&1)
 if [ $? -gt 0 ]; then
 	(echo ">>>>>>>>>> Error building <<<<<<<<<<" 1>>makepkg.log 2>&1)
 	exit 1
@@ -15,7 +14,7 @@ fi
 
 # print the package filelist to the build log
 (echo ":::::::::: Filelist ::::::::::" 1>>makepkg.log 2>&1)
-(cat filelist 1>>makepkg.log 2>&1)
+(cat pkg/.FILELIST 1>>makepkg.log 2>&1)
 
 # run namcap and add output to the build log
 (echo ":::::::::: Running namcap ::::::::::" 1>>makepkg.log 2>&1)

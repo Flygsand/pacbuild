@@ -1,4 +1,5 @@
 #!/bin/bash
+export LANG=C
 source /etc/profile
 cd /waka
 pacman --noconfirm -Syu
@@ -6,7 +7,7 @@ pacman --noconfirm -Sy #KERNEL# namcap
 tar xzfp #TARBALL#
 
 # run makepkg and log the output
-(makepkg -s -L --noconfirm --noprogressbar 2>&1)
+(makepkg -s --noconfirm --noprogressbar 1> makepkg.log 2>&1)
 if [ $? -gt 0 ]; then
 	(echo ">>>>>>>>>> Error building <<<<<<<<<<" 1>>makepkg.log 2>&1)
 	exit 1

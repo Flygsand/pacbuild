@@ -105,7 +105,10 @@ class ForkWorker(object):
 			return
 
 	def isAlive(self):
-		val = os.waitpid(self.child, os.WNOHANG)
+		try:
+			val = os.waitpid(self.child, os.WNOHANG)
+		except OSError:
+			return False
 		if val == (0,0):
 			return True
 		else:

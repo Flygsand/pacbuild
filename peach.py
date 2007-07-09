@@ -106,9 +106,9 @@ def job_list(all=False, archid=None):
 		print "<td><a href='?action=colorlog&id=%s'>Colorized Log</a></td>"%(i.id)
 		# if build is not 'done', don't print a link
 		if i.status == 'done':
-			print "<td><a href='?action=pkg&id=%s'>%s-%s-%s.pkg.tar.gz</a></td>"%(i.id,i.name,i.pkgver,i.pkgrel)
+			print "<td><a href='?action=pkg&id=%s'>%s-%s-%s-%s.pkg.tar.gz</a></td>"%(i.id,i.name,i.pkgver,i.pkgrel,i.arch.name)
 		else:
-			print "<td>%s-%s-%s.pkg.tar.gz</td>"%(i.name,i.pkgver,i.pkgrel)
+			print "<td>%s-%s-%s-%s.pkg.tar.gz</td>"%(i.name,i.pkgver,i.pkgrel,i.arch.name)
 		print "</tr>"
 	print "</table></body></html>"
 
@@ -137,7 +137,7 @@ def pkg_log(id=0):
 def pkg_file(id=0):
 	pkg = package.Package.get(id)
 	print "Content-type: application/x-compressed;"
-	print "Content-Disposition: attachment; filename=\""+pkg.name+"-"+pkg.pkgver+"-"+pkg.pkgrel+".pkg.tar.gz\"\n"
+	print "Content-Disposition: attachment; filename=\""+pkg.name+"-"+pkg.pkgver+"-"+pkg.pkgrel+"-"+pkg.arch.name+".pkg.tar.gz\"\n"
 	sys.stdout.write(pkg.binary)
 
 def arch_list():

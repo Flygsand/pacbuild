@@ -1,0 +1,31 @@
+Things left to do
+-----------------
+
+- Better logging in apple
+
+- Automatic chroot rebuilding (either triggered by apple or a "no update since" timer)
+
+- Unionfs
+
+- Dependency handling (know what packages other packages depend on)
+
+  - Repo contents knowledge
+
+    - Apple will have to know all the versions of all the packages in all the repos for all the architectures
+
+  - New status -- inrepo
+
+    - When a package moves from built to in the repo, we need to know its the one we can access and no others
+
+  - New status -- depwait
+
+    - When a package can't be built because another package isn't built yet
+
+- Update pacman python module (because the one with namcap currently sucks)
+
+
+Completed tasks
+---------------
+
+- Pacman 3 support
+

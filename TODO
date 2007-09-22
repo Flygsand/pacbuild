@@ -21,11 +21,10 @@ Things left to do
 
     - When a package can't be built because another package isn't built yet
 
-- Update pacman python module (because the one with namcap currently sucks)
-
 
 Completed tasks
 ---------------
 
 - Pacman 3 support
 
+- Update pacman python module (because the one with namcap currently sucks)

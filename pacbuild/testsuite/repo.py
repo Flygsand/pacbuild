@@ -22,19 +22,19 @@ class RepoTest(unittest.TestCase):
 		shutil.rmtree(self.tmpdir)
 
 	def testCategories(self):
-		r = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
+		r = repo.Repo(name='core', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		repoCats = set(r.categories)
 		testCats = set(('base', 'devel'))
 		self.failUnless(repoCats - testCats == set([]))
 
 	def testPkgbuilds(self):
-		r = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
+		r = repo.Repo(name='core', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		repoPkgbuilds = set(r.pkgbuilds)
 		testPkgbuilds = set(('db', 'dcron', 'devfsd', 'dhcpcd', 'diffutils', 'file', 'filesystem', 'findutils', 'flex', 'gcc', 'gdbm', 'gettext', 'glibc', 'grep', 'groff', 'grub', 'gzip', 'hotplug', 'initscripts', 'iputils', 'kbd', 'openssl', 'tar', 'tcp_wrappers', 'vim', 'zlib', 'arch', 'distcc', 'gc', 'gdb', 'mod_python', 'ruby', 'strace', 'unixodbc'))
 		self.failUnless(repoPkgbuilds - testPkgbuilds == set([]))
 
 	def testRepoInstances(self):
-		r = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
+		r = repo.Repo(name='core', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		instances = r.instances
 		found = False
 		for path, i in instances:
@@ -44,7 +44,7 @@ class RepoTest(unittest.TestCase):
 		self.failIf(not found)
 
 	def testGetInstances(self):
-		r = repo.Repo(name='current', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
+		r = repo.Repo(name='core', absdir='%s/abs'%self.tmpdir, repodir='na', updatescript='na')
 		arch = misc.Arch(name='i586')
 		instances = repo.getInstances(r, arch)
 		found = 0

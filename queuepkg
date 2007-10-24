@@ -35,7 +35,7 @@ username = changeme
 password = xxxxx
 url = http://localhost:8888
 priority = 1
-configuration = current
+configuration = core
 arch = i686
 
 [testing]

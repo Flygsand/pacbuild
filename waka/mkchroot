@@ -129,8 +129,8 @@ quickinst() {
 	if [ -f /tmp/packages.txt ]; then
 		rm /tmp/packages.txt
 	fi
-	msg "Running $QUIKINST_LOCATION ftp $rootpath $PACKAGE_MIRROR_CURRENT"
-	source $QUIKINST_LOCATION ftp $rootpath $PACKAGE_MIRROR_CURRENT || return 1
+	msg "Running $QUIKINST_LOCATION ftp $rootpath $PACKAGE_MIRROR_CORE"
+	source $QUIKINST_LOCATION ftp $rootpath $PACKAGE_MIRROR_CORE || return 1
 }
 
 # copy resolv.conf from host system and create a pacman.conf file
@@ -138,8 +138,8 @@ conf_update() {
 	cp -L /etc/resolv.conf $rootpath/etc || return 1
 
 	if [ "$PACMANFILE" = "" ]; then
-		echo "[current]" > $rootpath/etc/pacman.d/current
-		echo "Server = ${PACKAGE_MIRROR_CURRENT}" >> $rootpath/etc/pacman.d/current
+		echo "[core]" > $rootpath/etc/pacman.d/core
+		echo "Server = ${PACKAGE_MIRROR_CORE}" >> $rootpath/etc/pacman.d/core
 
 		echo "[extra]" > $rootpath/etc/pacman.d/extra
 		echo "Server = ${PACKAGE_MIRROR_EXTRA}" >> $rootpath/etc/pacman.d/extra
